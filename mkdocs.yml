@@ -1,0 +1,25 @@
+site_name: Finanzmanager – Dokumentation
+docs_dir: docs
+site_dir: site
+
+nav:
+  - Start: index.md
+  - Benutzerhandbuch: user_guide.md
+  - Entwicklerhandbuch: dev_guide.md
+  - Betrieb/Support: operations.md
+  - Architektur:
+      - Übersicht: architecture/overview.md
+      - Komponenten: architecture/components.md
+      - Datenmodell: architecture/data_model.md
+  - ADR:
+      - Index: adr/README.md
+      - ADR 0001: adr/0001-architecture.md
+
+theme:
+  name: material
+  language: de
+
+markdown_extensions:
+  - admonition
+  - toc:
+      permalink: true

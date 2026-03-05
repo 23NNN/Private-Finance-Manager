@@ -1,0 +1,50 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyd
+*.so
+
+# venv
+.venv/
+venv/
+
+# tooling caches
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# IDE
+.idea/
+.vscode/
+
+# build artifacts
+build/
+dist/
+*.egg-info/
+*.spec
+
+# logs & local data
+*.log
+data/
+*.db
+*.sqlite
+*.sqlite3
+
+# OS
+.DS_Store
+Thumbs.db
+/update package/
+/scripts/apply_zip_update.py
+/.patch_backups/
+/finanzmanager_context.zip
+
+# Security (runtime-generated, must not be committed)
+security.json
+.work/
+*.enc
+
+# Diagnostics output
+docs/diagnostics/*.txt
+CLAUDE_ANALYSIS.md
+/scripts/launch_check.py
+/LAUNCH_READINESS.md
