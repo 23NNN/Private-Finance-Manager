@@ -140,6 +140,7 @@ class ExpensesPresenter:
         # Variable
         self._view.add_var_btn.configure(command=self.add_variable)
         self._view.edit_var_btn.configure(command=self.edit_variable)
+        self._view.pay_var_btn.configure(command=self.pay_variable)
         self._view.delete_var_btn.configure(command=self.soft_delete_variable)
         self._view.undo_var_btn.configure(command=self.undo_variable)
 
@@ -573,6 +574,19 @@ class ExpensesPresenter:
             self._err(tr("common.error"), tr("expenses.error.reactivate_failed"))
 
     # -------------------- status flips: variable --------------------
+    def pay_variable(self) -> None:
+        ids = [int(i) for i in self._view.var_tree.selection() if i]
+        if not ids:
+            self._warn(tr("common.notice"), tr("expenses.warn.select_variable"))
+            return
+        try:
+            for vid in ids:
+                self._exp.set_variable_status(vid, "PAID")
+            self.refresh()
+        except Exception:
+            logger.exception("pay_variable failed.")
+            self._err(tr("common.error"), tr("expenses.error.pay_failed"))
+
     def soft_delete_variable(self) -> None:
         vid = self._selected_id(self._view.var_tree)
         if not vid:
