@@ -102,7 +102,8 @@ class EmployerService:
 
         Overlaps are handled:
           - If new_from is after an overlapping old rule -> old.valid_to is set to new_from - 1 day.
-          - Else -> error (user must adjust).
+          - If new_from is before an overlapping old rule -> new_to is capped to other_from - 1 day.
+          - If both start on the same date -> error (user must adjust).
         """
         with self._uow_factory() as uow:
             obj = uow.pay_rules.get(dto.id) if dto.id else None
@@ -122,8 +123,13 @@ class EmployerService:
 
                 other_from = _norm_from(getattr(other, "valid_from", None))
                 if new_from > other_from:
+                    # new rule starts after other → trim other rule's end date
                     other.valid_to = new_from - timedelta(days=1)
                     uow.pay_rules.upsert(other)
+                elif new_from < other_from:
+                    # new rule starts before other → cap new rule's end date
+                    cap = other_from - timedelta(days=1)
+                    new_to = cap if (new_to is None or new_to > cap) else new_to
                 else:
                     raise ValueError(
                         "Overlapping rule found. Please adjust 'Valid from/to' "
@@ -191,6 +197,9 @@ class EmployerService:
                 if new_from > other_from:
                     other.valid_to = new_from - timedelta(days=1)
                     uow.savings_rules.upsert(other)
+                elif new_from < other_from:
+                    cap = other_from - timedelta(days=1)
+                    new_to = cap if (new_to is None or new_to > cap) else new_to
                 else:
                     raise ValueError(
                         "Overlapping savings rate found. Please adjust 'Valid from/to' "

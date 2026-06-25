@@ -267,6 +267,15 @@ class IncomeService:
             uow.income_special.upsert(obj)
             return obj.id
 
+    def move_special(self, special_id: int, new_year: int, new_month: int) -> None:
+        with self._uow_factory() as uow:
+            obj = uow.income_special.get(special_id)
+            if not obj:
+                return
+            obj.year = new_year
+            obj.month = new_month
+            uow.income_special.upsert(obj)
+
     def delete_special(self, special_id: int) -> None:
         with self._uow_factory() as uow:
             uow.income_special.delete(special_id)

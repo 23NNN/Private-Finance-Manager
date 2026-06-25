@@ -38,6 +38,9 @@ Thumbs.db
 /.patch_backups/
 /finanzmanager_context.zip
 
+# Claude Code (local settings, must not be committed)
+.claude/settings.local.json
+
 # Security (runtime-generated, must not be committed)
 security.json
 .work/
@@ -48,3 +51,9 @@ docs/diagnostics/*.txt
 CLAUDE_ANALYSIS.md
 /scripts/launch_check.py
 /LAUNCH_READINESS.md
+
+# Claude Code — Private Dokumentation
+HANDOVER.md
+docs/handoff/
+docs/PRIVATE.md
+*.private.md

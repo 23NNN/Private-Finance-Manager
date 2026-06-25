@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "finanzmanager"
-version = "0.1.0"
+version = "1.1.0"
 description = "Windows desktop app (Tkinter/ttk) for managing personal finances."
 requires-python = ">=3.11"
 dependencies = [

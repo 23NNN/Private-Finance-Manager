@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+import tkinter as tk
 import traceback
 from datetime import date
 from decimal import Decimal
@@ -42,6 +43,8 @@ LOAN_EVENT_KEYS: dict[str, str] = {
     "EXTRA_PAYMENT": "loan_event.extra_payment",
     "RATE_CHANGE": "loan_event.rate_change",
     "INTEREST_CHANGE": "loan_event.interest_change",
+    "INTEREST": "loan_event.interest",
+    "REFINANCING": "loan_event.refinancing",
     "NOTE": "loan_event.note",
 }
 
@@ -140,6 +143,7 @@ class ExpensesPresenter:
         # Variable
         self._view.add_var_btn.configure(command=self.add_variable)
         self._view.edit_var_btn.configure(command=self.edit_variable)
+        self._view.pay_var_btn.configure(command=self.pay_variable)
         self._view.delete_var_btn.configure(command=self.soft_delete_variable)
         self._view.undo_var_btn.configure(command=self.undo_variable)
 
@@ -164,6 +168,7 @@ class ExpensesPresenter:
 
         self._view.rec_tree.bind("<Delete>", lambda _e: self.soft_delete_recurring())
         self._view.var_tree.bind("<Delete>", lambda _e: self.soft_delete_variable())
+        self._view.var_tree.bind("<Button-3>", self._show_var_context_menu, add="+")
         self._view.loan_events_tree.bind("<Delete>", lambda _e: self.delete_selected_event())
 
         # UX: load events on loan select
@@ -309,6 +314,8 @@ class ExpensesPresenter:
             rec_cat_id = self._parse_id_choice(f_rec.get("category") or "")
 
             self._view.rec_tree.delete(*self._view.rec_tree.get_children())
+            rec_count = 0
+            rec_total = Decimal(0)
             for r in rec:
                 if rec_status_ui != self._all_label():
                     want = _ui_to_code(rec_status_ui, RECURRING_STATUS_KEYS, default=None)
@@ -339,6 +346,16 @@ class ExpensesPresenter:
                         override_disp,
                     ),
                 )
+                rec_count += 1
+                try:
+                    rec_total += Decimal(r.amount or 0)
+                except Exception:
+                    pass
+
+            if hasattr(self._view, "rec_sum_label"):
+                self._view.rec_sum_label.config(
+                    text=f"{rec_count} {tr('common.entries')}  |  {tr('common.total')}: {rec_total:.2f} €"
+                )
 
             # -------------------- Variable --------------------
             f_var = (filters.get("variable") or {})
@@ -354,6 +371,8 @@ class ExpensesPresenter:
             self._var_by_id = {int(v.id): v for v in var if getattr(v, "id", None) is not None}
 
             self._view.var_tree.delete(*self._view.var_tree.get_children())
+            var_count = 0
+            var_total = Decimal(0)
             for v in var:
                 if var_status_ui != self._all_label():
                     want = _ui_to_code(var_status_ui, VARIABLE_STATUS_KEYS, default=None)
@@ -373,6 +392,7 @@ class ExpensesPresenter:
                     except Exception:
                         name_disp = v.name
 
+                pay_bucket_disp = _code_to_ui(_v(getattr(v, "pay_bucket", "NONE")), PAY_BUCKET_KEYS)
                 self._view.var_tree.insert(
                     "",
                     "end",
@@ -382,8 +402,19 @@ class ExpensesPresenter:
                         cat_name.get(v.category_id, f"#{v.category_id}"),
                         _m(v.amount),
                         status,
+                        pay_bucket_disp,
                         acc_label.get(v.account_id, "") if getattr(v, "account_id", None) else "",
                     ),
+                )
+                var_count += 1
+                try:
+                    var_total += Decimal(v.amount or 0)
+                except Exception:
+                    pass
+
+            if hasattr(self._view, "var_sum_label"):
+                self._view.var_sum_label.config(
+                    text=f"{var_count} {tr('common.entries')}  |  {tr('common.total')}: {var_total:.2f} €"
                 )
 
             # -------------------- Loans --------------------
@@ -573,6 +604,19 @@ class ExpensesPresenter:
             self._err(tr("common.error"), tr("expenses.error.reactivate_failed"))
 
     # -------------------- status flips: variable --------------------
+    def pay_variable(self) -> None:
+        ids = [int(i) for i in self._view.var_tree.selection() if i]
+        if not ids:
+            self._warn(tr("common.notice"), tr("expenses.warn.select_variable"))
+            return
+        try:
+            for vid in ids:
+                self._exp.set_variable_status(vid, "PAID")
+            self.refresh()
+        except Exception:
+            logger.exception("pay_variable failed.")
+            self._err(tr("common.error"), tr("expenses.error.pay_failed"))
+
     def soft_delete_variable(self) -> None:
         vid = self._selected_id(self._view.var_tree)
         if not vid:
@@ -604,6 +648,47 @@ class ExpensesPresenter:
         except Exception:
             logger.exception("undo_variable failed.")
             self._err(tr("common.error"), tr("expenses.error.reopen_failed"))
+
+    def _show_var_context_menu(self, event) -> None:
+        item = self._view.var_tree.identify_row(event.y)
+        if not item:
+            return
+        self._view.var_tree.selection_set(item)
+        menu = tk.Menu(self._root(), tearoff=False)
+        menu.add_command(label=tr("expenses.variable.ctx.move"), command=self._move_variable_dialog)
+        menu.tk_popup(event.x_root, event.y_root)
+
+    def _move_variable_dialog(self) -> None:
+        vid = self._selected_id(self._view.var_tree)
+        if not vid:
+            return
+        dto = self._var_by_id.get(vid)
+        if not dto:
+            return
+
+        fields = [
+            FieldSpec("year", tr("expenses.variable.move.year"), "entry", required=True, validator=ui_int, width=8),
+            FieldSpec(
+                "month",
+                tr("expenses.variable.move.month"),
+                "combo",
+                required=True,
+                values=[str(m) for m in range(1, 13)],
+                width=8,
+            ),
+        ]
+        initial = {"year": str(dto.year), "month": str(dto.month)}
+        dlg = FormDialog(self._root(), tr("expenses.variable.move.title"), fields, initial=initial)
+        if not dlg.result:
+            return
+        try:
+            new_year = int(dlg.result["year"])
+            new_month = int(dlg.result["month"])
+            self._exp.move_variable(vid, new_year, new_month)
+            self.refresh()
+        except Exception:
+            logger.exception("move_variable failed.")
+            self._err(tr("common.error"), tr("expenses.error.move_failed"))
 
     # -------------------- loan events --------------------
     def show_events_for_selected(self, prefer_event_id: int | None = None) -> None:
@@ -803,9 +888,6 @@ class ExpensesPresenter:
 
     # -------------------- dialogs: variable --------------------
     def add_variable(self) -> None:
-        if self._is_year_view():
-            self._warn(tr("common.notice"), tr("expenses.warn.create_variable_in_month_view"))
-            return
         self._open_var_dialog(None)
 
     def edit_variable(self) -> None:
@@ -847,6 +929,10 @@ class ExpensesPresenter:
                 }
             )
 
+        add_month_field = self._is_year_view() and vid is None
+        if add_month_field:
+            initial["month"] = str(period.month)
+
         fields = [
             FieldSpec("name", tr("expenses.variable.field.name"), "entry", required=True, width=40),
             FieldSpec("category", tr("expenses.variable.field.category"), "combo", required=True, values=cat_vals, width=40),
@@ -868,6 +954,18 @@ class ExpensesPresenter:
             ),
             FieldSpec("notes", tr("expenses.variable.field.notes"), "text", required=False, width=40),
         ]
+        if add_month_field:
+            fields.insert(
+                2,
+                FieldSpec(
+                    "month",
+                    tr("expenses.variable.move.month"),
+                    "combo",
+                    required=True,
+                    values=[str(m) for m in range(1, 13)],
+                    width=8,
+                ),
+            )
 
         dlg = FormDialog(self._root(), tr("expenses.variable.dialog.title"), fields, initial=initial)
         if not dlg.result:
@@ -881,6 +979,8 @@ class ExpensesPresenter:
 
             year = period.year
             month = period.month
+            if add_month_field:
+                month = int(dlg.result.get("month") or month)
             if existing:
                 year = int(existing.year)
                 month = int(existing.month)
@@ -1040,6 +1140,15 @@ class ExpensesPresenter:
 
         existing: LoanEventDTO | None = None
         events = self._loan.list_events(loan_id)
+
+        if not event_id:
+            last_payment = next(
+                (e for e in reversed(events) if _v(getattr(e, "event_type", "")) == "PAYMENT" and e.amount),
+                None,
+            )
+            if last_payment:
+                initial["amount"] = str(last_payment.amount)
+
         if event_id:
             existing = next((e for e in events if int(e.id) == int(event_id)), None)
             if existing:

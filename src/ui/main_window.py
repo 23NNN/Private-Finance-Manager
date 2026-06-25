@@ -23,8 +23,10 @@ from src.application.services.account_service import AccountService
 from src.application.services.employer_service import EmployerService
 from src.application.services.expense_service import ExpenseService
 from src.application.services.export_service import ExportService
+from src.application.services.backup_service import BackupService
 from src.application.services.security_service import SecurityService
 from src.ui.security.mode_dialog import SecurityModeDialog
+from src.ui.security.lock_overlay import LockOverlay
 from src.application.services.import_service import ImportService
 from src.application.services.income_service import IncomeService
 from src.application.services.loan_service import LoanService
@@ -70,6 +72,7 @@ class MainWindow:
         self.overview_svc = OverviewService()
         self.import_svc = ImportService()
         self.export_svc = ExportService()
+        self.backup_svc = BackupService(self.settings)
         self.security_svc = SecurityService()
 
         self.status = tk.StringVar(value=tr("status.ready"))
@@ -79,6 +82,7 @@ class MainWindow:
         self._build_ui()
 
         self.root.after(200, self._poll_queue)
+        self.root.after(500, self._apply_loan_interest)
 
     # -------------------- Exceptions / Error UI --------------------
     def _install_exception_hooks(self) -> None:
@@ -106,6 +110,8 @@ class MainWindow:
 
         security_menu = tk.Menu(m, tearoff=False)
         m.add_cascade(label=tr("menu.security"), menu=security_menu)
+        security_menu.add_command(label=tr("menu.security.lock"), command=self._lock_app)
+        security_menu.add_separator()
         security_menu.add_command(label=tr("menu.security.mode"), command=self.open_security_mode)
         security_menu.add_command(label=tr("menu.security.pin"), command=self.change_pin)
 
@@ -139,6 +145,8 @@ class MainWindow:
         file_menu.add_command(label=tr("menu.export.csv"), command=self.export_csv)
         file_menu.add_command(label=tr("menu.template.csv"), command=self.download_csv_template)
         file_menu.add_command(label=tr("menu.template.excel"), command=self.download_excel_template)
+        file_menu.add_separator()
+        file_menu.add_command(label=tr("menu.backup"), command=self._do_backup)
         file_menu.add_separator()
         file_menu.add_command(label=tr("menu.db.check"), command=self.check_database)
         file_menu.add_command(label=tr("menu.info"), command=self.show_info)
@@ -330,6 +338,32 @@ class MainWindow:
 
         self.root.after(200, self._poll_queue)
 
+    def _apply_loan_interest(self) -> None:
+        try:
+            n = self.loan_svc.apply_pending_interest_events()
+            if n > 0:
+                logger.info("Auto-generated %d interest event(s) for active loans.", n)
+        except Exception:
+            logger.exception("apply_pending_interest_events failed (non-fatal).")
+
+    # -------------------- Backup --------------------
+    def _do_backup(self) -> None:
+        suggested = self.backup_svc.suggest_backup_name()
+        path = filedialog.asksaveasfilename(
+            parent=self.root,
+            title=tr("menu.backup"),
+            initialfile=suggested,
+            defaultextension=".db",
+            filetypes=[("SQLite DB", "*.db"), ("All files", "*.*")],
+        )
+        if not path:
+            return
+        try:
+            result = self.backup_svc.backup_database(path)
+            messagebox.showinfo(tr("backup.success.title"), trf("backup.success.msg", path=result.backup_path), parent=self.root)
+        except Exception as exc:
+            show_error(self.root, tr("common.error"), str(exc))
+
     # -------------------- Menu actions --------------------
     def show_info(self) -> None:
         s = self.settings
@@ -437,6 +471,22 @@ class MainWindow:
             import sys
 
             os.execv(sys.executable, [sys.executable] + sys.argv)
+
+    def _lock_app(self) -> None:
+        from src.security.manager import SecurityManager
+        sec_path = SecurityManager(self.settings).security_path()
+        cfg = None
+        try:
+            from src.security.security_config import load_security_config
+            cfg = load_security_config(sec_path)
+        except Exception:
+            pass
+
+        if cfg is None or not cfg.has_pin():
+            messagebox.showinfo(tr("lock.unavailable.title"), tr("lock.unavailable.msg"), parent=self.root)
+            return
+
+        LockOverlay(self.root, sec_path)
 
     def open_security_mode(self) -> None:
         try:

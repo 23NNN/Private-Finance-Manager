@@ -7,6 +7,7 @@
     Replace your fragile Excel sheets with a real application. Your data stays local. Always.
   </p>
   <p align="center">
+    <img src="https://img.shields.io/badge/Version-1.1-22c55e" alt="Version 1.1">
     <img src="https://img.shields.io/badge/Python-3.11+-3776AB?logo=python&logoColor=white" alt="Python 3.11+">
     <img src="https://img.shields.io/badge/Platform-Windows-0078D6?logo=windows&logoColor=white" alt="Windows">
     <img src="https://img.shields.io/badge/License-MIT-22c55e" alt="MIT License">
@@ -44,23 +45,38 @@ Managing personal finances in Excel works — until it doesn't. Formulas break s
 - Event-based loan history (payments, extra payments, rate changes)
 - Automatic monthly status: opening balance → payments → closing balance
 - Full audit trail via LoanEvent log
+- Refinancing support — increase loan principal via dedicated event type
+- Automatic monthly interest accrual on startup (configurable annual rate)
 
 **Accounts & Savings**
 - Multi-account management with role-based categorization
 - Savings goals with automated 10% allocation per income source
 - Account-level expense attribution with percentage breakdown
 
+**Expense Management (v1.1)**
+- Filtered summary row (count + total) for recurring and variable expenses
+- Variable expenses: move entries between months via context menu
+- Variable expenses: add new entries directly in year view (month picker included)
+- Debit timing column (Abbuchung: Beginning/Mid) now visible in variable expense list
+- Pay button fully wired — mark selected entries as paid in one click
+
+**Income (v1.1)**
+- Special income: move entries between months via context menu
+- Pay-rule overlap handling hardened (3 automatic resolution scenarios)
+
 **Data Management**
 - One-time Excel/CSV import with smart column mapping
 - CSV export for reports and backups
 - Template downloads for clean data entry
 - SHA256-based deduplication (no accidental double imports)
+- **Database backup** via File → Backup database… (timestamped copy)
 
 **Security & Privacy**
 - All data stored locally in SQLite — no cloud, no sync, no tracking
 - Optional encryption at rest via SQLCipher
 - PIN and device-based protection modes (DPAPI on Windows)
 - Portable mode available (DB next to executable)
+- **In-app lock** (Security → Lock app) — PIN overlay without restarting
 
 **Multi-Language UI**
 - German, English, French, Spanish, Italian

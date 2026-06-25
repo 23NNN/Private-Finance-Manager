@@ -139,6 +139,15 @@ class ExpenseService:
             uow.expense_variable.upsert(obj)
             return obj.id
 
+    def move_variable(self, variable_id: int, new_year: int, new_month: int) -> None:
+        with self._uow_factory() as uow:
+            obj = uow.expense_variable.get(variable_id)
+            if not obj:
+                return
+            obj.year = new_year
+            obj.month = new_month
+            uow.expense_variable.upsert(obj)
+
     def set_variable_status(self, variable_id: int, status: str) -> None:
         with self._uow_factory() as uow:
             obj = uow.expense_variable.get(variable_id)

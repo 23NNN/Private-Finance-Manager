@@ -130,3 +130,57 @@ python scripts/export_context.py
 Generates a ZIP containing:
 - `src/`, `tests/`, `docs/`, `scripts/`, `pyproject.toml`, `README.md`, `app.py`
 without `.git`, `.venv`, `dist/`, `build`.
+
+---
+
+## Common Tasks (Quick Navigation)
+
+### Add/change a UI label or text
+1. Find `tr("key")` call in `src/ui/<module>/view.py`
+2. Add key seed to `src/infrastructure/db/migrations/schema_patch.py` (all 5 langs)
+3. Run `python scripts/i18n_audit.py` to verify
+
+### Add a new field to Expenses / Income / Accounts
+1. `src/infrastructure/db/orm_models.py` – add column
+2. `src/infrastructure/db/migrations/versions/` – new Alembic file
+3. `src/application/dto/<module>.py` – add field to DTO
+4. `src/infrastructure/repositories/<module>.py` – update queries
+5. `src/application/services/<module>_service.py` – expose in service
+6. `src/ui/<module>/presenter.py` + `view.py` – display/edit
+
+### Change income calculation logic
+→ `src/domain/policies/hourly_pay_policy.py` or `recurring_policy.py`
+→ `src/application/services/income_service.py`
+
+### Fix/change a dialog or popup
+→ `src/ui/common/dialogs.py` (generic) OR `src/ui/<module>/view.py` (module-specific)
+
+### Add a new i18n translation key
+→ Add seed in `src/infrastructure/db/migrations/schema_patch.py` (5 langs)
+→ Run `python scripts/i18n_audit.py`
+
+### Change CSV/Excel import behavior
+→ `src/application/importers/csv_importer.py` or `excel_importer.py`
+→ `src/application/services/import_service.py`
+→ `src/ui/common/import_export_dialog.py`
+
+### Change security / encryption behavior
+→ `src/security/manager.py` → `src/security/bootstrap.py` → `src/security/secure_db.py`
+
+### Change DB schema
+→ `src/infrastructure/db/orm_models.py` + new migration in `migrations/versions/`
+→ `src/infrastructure/db/migrations/runner.py` (auto-runs on startup)
+
+### Fix startup / import error
+→ `app.py` (sys.path, bootstrap order)
+→ `src/infrastructure/db/engine.py`
+→ `src/security/bootstrap.py`
+
+### Change application settings/constants
+→ `src/config/settings.py`
+
+### Change treeview sort or display behavior
+→ `src/ui/common/treeview_sort.py` + `src/ui/<module>/view.py`
+
+### Change period/date filter behavior
+→ `src/ui/common/period_selector.py` + `src/domain/models/period.py`
