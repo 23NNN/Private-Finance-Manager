@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+import tkinter as tk
 import traceback
 from datetime import date
 from decimal import Decimal
@@ -165,6 +166,7 @@ class ExpensesPresenter:
 
         self._view.rec_tree.bind("<Delete>", lambda _e: self.soft_delete_recurring())
         self._view.var_tree.bind("<Delete>", lambda _e: self.soft_delete_variable())
+        self._view.var_tree.bind("<Button-3>", self._show_var_context_menu, add="+")
         self._view.loan_events_tree.bind("<Delete>", lambda _e: self.delete_selected_event())
 
         # UX: load events on loan select
@@ -642,6 +644,47 @@ class ExpensesPresenter:
         except Exception:
             logger.exception("undo_variable failed.")
             self._err(tr("common.error"), tr("expenses.error.reopen_failed"))
+
+    def _show_var_context_menu(self, event) -> None:
+        item = self._view.var_tree.identify_row(event.y)
+        if not item:
+            return
+        self._view.var_tree.selection_set(item)
+        menu = tk.Menu(self._root(), tearoff=False)
+        menu.add_command(label=tr("expenses.variable.ctx.move"), command=self._move_variable_dialog)
+        menu.tk_popup(event.x_root, event.y_root)
+
+    def _move_variable_dialog(self) -> None:
+        vid = self._selected_id(self._view.var_tree)
+        if not vid:
+            return
+        dto = self._var_by_id.get(vid)
+        if not dto:
+            return
+
+        fields = [
+            FieldSpec("year", tr("expenses.variable.move.year"), "entry", required=True, validator=ui_int, width=8),
+            FieldSpec(
+                "month",
+                tr("expenses.variable.move.month"),
+                "combo",
+                required=True,
+                values=[str(m) for m in range(1, 13)],
+                width=8,
+            ),
+        ]
+        initial = {"year": str(dto.year), "month": str(dto.month)}
+        dlg = FormDialog(self._root(), tr("expenses.variable.move.title"), fields, initial=initial)
+        if not dlg.result:
+            return
+        try:
+            new_year = int(dlg.result["year"])
+            new_month = int(dlg.result["month"])
+            self._exp.move_variable(vid, new_year, new_month)
+            self.refresh()
+        except Exception:
+            logger.exception("move_variable failed.")
+            self._err(tr("common.error"), tr("expenses.error.move_failed"))
 
     # -------------------- loan events --------------------
     def show_events_for_selected(self, prefer_event_id: int | None = None) -> None:
