@@ -548,7 +548,7 @@ class IncomePresenter:
                 special_amount=special,
                 calc_amount=base + special,
                 actual_amount=actual,
-                payout_timing=timing_code(str(data["payout_timing"]).strip(), "MID"),
+                payout_timing=timing_code(str(data["payout_timing"]).strip()),
                 account_id=self._parse_optional_id(str(data.get("account", ""))),
                 notes=str(data.get("notes", "")).strip() or None,
             )
@@ -725,7 +725,7 @@ class IncomePresenter:
                 special_amount=ui_decimal(str(data.get("special_amount", "")), default=Decimal("0")),
                 calc_amount=Decimal("0"),
                 actual_amount=ui_decimal(str(data.get("actual_amount", "")), default=Decimal("0")),
-                payout_timing=timing_code(str(data["payout_timing"]).strip(), "MID"),
+                payout_timing=timing_code(str(data["payout_timing"]).strip()),
                 account_id=self._parse_optional_id(str(data.get("account", ""))),
                 notes=str(data.get("notes", "")).strip() or None,
             )
@@ -819,7 +819,7 @@ class IncomePresenter:
                 name=str(data["name"]).strip(),
                 amount=ui_decimal(str(data.get("amount", "")), default=Decimal("0")),
                 actual_amount=ui_decimal(str(data.get("actual_amount", "")), default=Decimal("0")),
-                payout_timing=timing_code(str(data["payout_timing"]).strip(), "MID"),
+                payout_timing=timing_code(str(data["payout_timing"]).strip()),
                 account_id=self._parse_optional_id(str(data.get("account", ""))),
                 notes=str(data.get("notes", "")).strip() or None,
             )
@@ -914,7 +914,7 @@ class IncomePresenter:
             dto = EmployerDTO(
                 id=existing.id if existing else None,
                 name=str(data["name"]).strip(),
-                payout_timing=timing_code(str(data["payout_timing"]).strip(), "MID"),
+                payout_timing=timing_code(str(data["payout_timing"]).strip()),
                 default_account_id=self._parse_optional_id(str(data.get("default_account", ""))),
                 notes=str(data.get("notes", "")).strip() or None,
             )
@@ -1029,8 +1029,8 @@ class IncomePresenter:
             dto = PayRuleDTO(
                 id=existing.id if existing else None,
                 employer_id=employer_id,
-                rule_type=rule_type_code(str(data["rule_type"]).strip(), str(data["rule_type"]).strip()),
-                unit=unit_code(str(data["unit"]).strip(), str(data["unit"]).strip()),
+                rule_type=rule_type_code(str(data["rule_type"]).strip()),
+                unit=unit_code(str(data["unit"]).strip()),
                 value=ui_decimal(str(data.get("value", "")), default=Decimal("0")),
                 valid_from=vf,
                 valid_to=vt,
