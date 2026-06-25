@@ -23,6 +23,7 @@ from src.application.services.account_service import AccountService
 from src.application.services.employer_service import EmployerService
 from src.application.services.expense_service import ExpenseService
 from src.application.services.export_service import ExportService
+from src.application.services.backup_service import BackupService
 from src.application.services.security_service import SecurityService
 from src.ui.security.mode_dialog import SecurityModeDialog
 from src.application.services.import_service import ImportService
@@ -70,6 +71,7 @@ class MainWindow:
         self.overview_svc = OverviewService()
         self.import_svc = ImportService()
         self.export_svc = ExportService()
+        self.backup_svc = BackupService(self.settings)
         self.security_svc = SecurityService()
 
         self.status = tk.StringVar(value=tr("status.ready"))
@@ -139,6 +141,8 @@ class MainWindow:
         file_menu.add_command(label=tr("menu.export.csv"), command=self.export_csv)
         file_menu.add_command(label=tr("menu.template.csv"), command=self.download_csv_template)
         file_menu.add_command(label=tr("menu.template.excel"), command=self.download_excel_template)
+        file_menu.add_separator()
+        file_menu.add_command(label=tr("menu.backup"), command=self._do_backup)
         file_menu.add_separator()
         file_menu.add_command(label=tr("menu.db.check"), command=self.check_database)
         file_menu.add_command(label=tr("menu.info"), command=self.show_info)
@@ -329,6 +333,24 @@ class MainWindow:
                 )
 
         self.root.after(200, self._poll_queue)
+
+    # -------------------- Backup --------------------
+    def _do_backup(self) -> None:
+        suggested = self.backup_svc.suggest_backup_name()
+        path = filedialog.asksaveasfilename(
+            parent=self.root,
+            title=tr("menu.backup"),
+            initialfile=suggested,
+            defaultextension=".db",
+            filetypes=[("SQLite DB", "*.db"), ("All files", "*.*")],
+        )
+        if not path:
+            return
+        try:
+            result = self.backup_svc.backup_database(path)
+            messagebox.showinfo(tr("backup.success.title"), trf("backup.success.msg", path=result.backup_path), parent=self.root)
+        except Exception as exc:
+            show_error(self.root, tr("common.error"), str(exc))
 
     # -------------------- Menu actions --------------------
     def show_info(self) -> None:
