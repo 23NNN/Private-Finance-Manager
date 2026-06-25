@@ -1054,6 +1054,15 @@ class ExpensesPresenter:
 
         existing: LoanEventDTO | None = None
         events = self._loan.list_events(loan_id)
+
+        if not event_id:
+            last_payment = next(
+                (e for e in reversed(events) if _v(getattr(e, "event_type", "")) == "PAYMENT" and e.amount),
+                None,
+            )
+            if last_payment:
+                initial["amount"] = str(last_payment.amount)
+
         if event_id:
             existing = next((e for e in events if int(e.id) == int(event_id)), None)
             if existing:
