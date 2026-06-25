@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+import tkinter as tk
 import traceback
 from datetime import date
 from decimal import Decimal
@@ -203,6 +204,7 @@ class IncomePresenter:
         self._view.fixed_tree.bind("<Delete>", lambda _e: self.delete_fixed())
         self._view.hourly_tree.bind("<Delete>", lambda _e: self.delete_hourly())
         self._view.special_tree.bind("<Delete>", lambda _e: self.delete_special())
+        self._view.special_tree.bind("<Button-3>", self._show_special_context_menu, add="+")
         self._view.rules_tree.bind("<Delete>", lambda _e: self.delete_rule())
         self._view.savings_rules_tree.bind("<Delete>", lambda _e: self.delete_savings_rule())
 
@@ -768,6 +770,49 @@ class IncomePresenter:
         except Exception:
             logger.exception("delete_special failed")
             self._err(tr("common.error"), tr("income.error.delete_failed"))
+
+    def _show_special_context_menu(self, event) -> None:
+        item = self._view.special_tree.identify_row(event.y)
+        if not item:
+            return
+        self._view.special_tree.selection_set(item)
+        menu = tk.Menu(self._view.winfo_toplevel(), tearoff=False)
+        menu.add_command(label=tr("income.special.ctx.move"), command=self._move_special_dialog)
+        menu.tk_popup(event.x_root, event.y_root)
+
+    def _move_special_dialog(self) -> None:
+        rid = self._selected_id(self._view.special_tree)
+        if not rid:
+            return
+        dto = self._special_by_id.get(rid)
+        if not dto:
+            return
+
+        from src.ui.common.dialogs import FieldSpec, FormDialog
+        from src.ui.common.validation import ui_int
+        fields = [
+            FieldSpec("year", tr("expenses.variable.move.year"), "entry", required=True, validator=ui_int, width=8),
+            FieldSpec(
+                "month",
+                tr("expenses.variable.move.month"),
+                "combo",
+                required=True,
+                values=[str(m) for m in range(1, 13)],
+                width=8,
+            ),
+        ]
+        initial = {"year": str(dto.year), "month": str(dto.month)}
+        dlg = FormDialog(self._view.winfo_toplevel(), tr("income.special.move.title"), fields, initial=initial)
+        if not dlg.result:
+            return
+        try:
+            new_year = int(dlg.result["year"])
+            new_month = int(dlg.result["month"])
+            self._income.move_special(rid, new_year, new_month)
+            self.refresh()
+        except Exception:
+            logger.exception("move_special failed")
+            self._err(tr("common.error"), tr("income.error.move_failed"))
 
     def _open_special_dialog(self, rid: int | None) -> None:
         period = self._view.get_period()
