@@ -884,9 +884,6 @@ class ExpensesPresenter:
 
     # -------------------- dialogs: variable --------------------
     def add_variable(self) -> None:
-        if self._is_year_view():
-            self._warn(tr("common.notice"), tr("expenses.warn.create_variable_in_month_view"))
-            return
         self._open_var_dialog(None)
 
     def edit_variable(self) -> None:
@@ -928,6 +925,10 @@ class ExpensesPresenter:
                 }
             )
 
+        add_month_field = self._is_year_view() and vid is None
+        if add_month_field:
+            initial["month"] = str(period.month)
+
         fields = [
             FieldSpec("name", tr("expenses.variable.field.name"), "entry", required=True, width=40),
             FieldSpec("category", tr("expenses.variable.field.category"), "combo", required=True, values=cat_vals, width=40),
@@ -949,6 +950,18 @@ class ExpensesPresenter:
             ),
             FieldSpec("notes", tr("expenses.variable.field.notes"), "text", required=False, width=40),
         ]
+        if add_month_field:
+            fields.insert(
+                2,
+                FieldSpec(
+                    "month",
+                    tr("expenses.variable.move.month"),
+                    "combo",
+                    required=True,
+                    values=[str(m) for m in range(1, 13)],
+                    width=8,
+                ),
+            )
 
         dlg = FormDialog(self._root(), tr("expenses.variable.dialog.title"), fields, initial=initial)
         if not dlg.result:
@@ -962,6 +975,8 @@ class ExpensesPresenter:
 
             year = period.year
             month = period.month
+            if add_month_field:
+                month = int(dlg.result.get("month") or month)
             if existing:
                 year = int(existing.year)
                 month = int(existing.month)
