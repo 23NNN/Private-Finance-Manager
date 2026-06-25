@@ -226,12 +226,13 @@ class ExpensesView(ttk.Frame):
         self.var_filter_reset_btn = ttk.Button(fv, text=tr("common.reset"))
         self.var_filter_reset_btn.pack(side="right", padx=8, pady=4)
 
-        cols_v = ["name", "category", "amount", "status", "account"]
+        cols_v = ["name", "category", "amount", "status", "pay_bucket", "account"]
         heads_v = {
             "name": tr("expenses.variable.col.name"),
             "category": tr("expenses.variable.col.category"),
             "amount": tr("expenses.variable.col.amount"),
             "status": tr("expenses.variable.col.status"),
+            "pay_bucket": tr("expenses.variable.col.pay_bucket"),
             "account": tr("expenses.variable.col.account"),
         }
         self.var_tree, frame_v = create_treeview_with_scrollbars(

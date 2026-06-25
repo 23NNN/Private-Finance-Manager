@@ -390,6 +390,7 @@ class ExpensesPresenter:
                     except Exception:
                         name_disp = v.name
 
+                pay_bucket_disp = _code_to_ui(_v(getattr(v, "pay_bucket", "NONE")), PAY_BUCKET_KEYS)
                 self._view.var_tree.insert(
                     "",
                     "end",
@@ -399,6 +400,7 @@ class ExpensesPresenter:
                         cat_name.get(v.category_id, f"#{v.category_id}"),
                         _m(v.amount),
                         status,
+                        pay_bucket_disp,
                         acc_label.get(v.account_id, "") if getattr(v, "account_id", None) else "",
                     ),
                 )

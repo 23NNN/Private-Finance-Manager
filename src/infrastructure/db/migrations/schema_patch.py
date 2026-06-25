@@ -264,6 +264,7 @@ def ensure_schema() -> list[str]:
                     "expenses.variable.col.category": {"de": "Kategorie", "en": "Category", "fr": "Catégorie", "es": "Categoría", "it": "Categoria"},
                     "expenses.variable.col.amount": {"de": "Betrag", "en": "Amount", "fr": "Montant", "es": "Importe", "it": "Importo"},
                     "expenses.variable.col.status": {"de": "Status", "en": "Status", "fr": "Statut", "es": "Estado", "it": "Stato"},
+                    "expenses.variable.col.pay_bucket": {"de": "Abbuchung", "en": "Debit", "fr": "Prélèvement", "es": "Cobro", "it": "Addebito"},
                     "expenses.variable.col.account": {"de": "Konto", "en": "Account", "fr": "Compte", "es": "Cuenta", "it": "Conto"},
                     "expenses.variable.dialog.title": {"de": "Variable Ausgabe", "en": "Variable expense", "fr": "Dépense variable", "es": "Gasto variable", "it": "Spesa variabile"},
                     "expenses.variable.field.name": {"de": "Name", "en": "Name", "fr": "Nom", "es": "Nombre", "it": "Nome"},
