@@ -383,6 +383,7 @@ def ensure_schema() -> list[str]:
                     "common.ok": {"de": "OK", "en": "OK", "fr": "OK", "es": "OK", "it": "OK"},
                     "common.cancel": {"de": "Abbrechen", "en": "Cancel", "fr": "Annuler", "es": "Cancelar", "it": "Annulla"},
                     "common.save": {"de": "Speichern", "en": "Save", "fr": "Enregistrer", "es": "Guardar", "it": "Salva"},
+                    "common.entries": {"de": "Einträge", "en": "entries", "fr": "entrées", "es": "entradas", "it": "voci"},
                     "common.total": {"de": "Summe", "en": "Total", "fr": "Total", "es": "Total", "it": "Totale"},
                     "common.notice": {"de": "Hinweis", "en": "Notice", "fr": "Info", "es": "Aviso", "it": "Avviso"},
                     "common.filetype.csv": {"de": "CSV", "en": "CSV", "fr": "CSV", "es": "CSV", "it": "CSV"},

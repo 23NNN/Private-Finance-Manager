@@ -310,6 +310,8 @@ class ExpensesPresenter:
             rec_cat_id = self._parse_id_choice(f_rec.get("category") or "")
 
             self._view.rec_tree.delete(*self._view.rec_tree.get_children())
+            rec_count = 0
+            rec_total = Decimal(0)
             for r in rec:
                 if rec_status_ui != self._all_label():
                     want = _ui_to_code(rec_status_ui, RECURRING_STATUS_KEYS, default=None)
@@ -340,6 +342,16 @@ class ExpensesPresenter:
                         override_disp,
                     ),
                 )
+                rec_count += 1
+                try:
+                    rec_total += Decimal(r.amount or 0)
+                except Exception:
+                    pass
+
+            if hasattr(self._view, "rec_sum_label"):
+                self._view.rec_sum_label.config(
+                    text=f"{rec_count} {tr('common.entries')}  |  {tr('common.total')}: {rec_total:.2f} €"
+                )
 
             # -------------------- Variable --------------------
             f_var = (filters.get("variable") or {})
@@ -355,6 +367,8 @@ class ExpensesPresenter:
             self._var_by_id = {int(v.id): v for v in var if getattr(v, "id", None) is not None}
 
             self._view.var_tree.delete(*self._view.var_tree.get_children())
+            var_count = 0
+            var_total = Decimal(0)
             for v in var:
                 if var_status_ui != self._all_label():
                     want = _ui_to_code(var_status_ui, VARIABLE_STATUS_KEYS, default=None)
@@ -385,6 +399,16 @@ class ExpensesPresenter:
                         status,
                         acc_label.get(v.account_id, "") if getattr(v, "account_id", None) else "",
                     ),
+                )
+                var_count += 1
+                try:
+                    var_total += Decimal(v.amount or 0)
+                except Exception:
+                    pass
+
+            if hasattr(self._view, "var_sum_label"):
+                self._view.var_sum_label.config(
+                    text=f"{var_count} {tr('common.entries')}  |  {tr('common.total')}: {var_total:.2f} €"
                 )
 
             # -------------------- Loans --------------------
