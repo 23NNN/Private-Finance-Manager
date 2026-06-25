@@ -82,6 +82,7 @@ class MainWindow:
         self._build_ui()
 
         self.root.after(200, self._poll_queue)
+        self.root.after(500, self._apply_loan_interest)
 
     # -------------------- Exceptions / Error UI --------------------
     def _install_exception_hooks(self) -> None:
@@ -336,6 +337,14 @@ class MainWindow:
                 )
 
         self.root.after(200, self._poll_queue)
+
+    def _apply_loan_interest(self) -> None:
+        try:
+            n = self.loan_svc.apply_pending_interest_events()
+            if n > 0:
+                logger.info("Auto-generated %d interest event(s) for active loans.", n)
+        except Exception:
+            logger.exception("apply_pending_interest_events failed (non-fatal).")
 
     # -------------------- Backup --------------------
     def _do_backup(self) -> None:

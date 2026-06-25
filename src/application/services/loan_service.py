@@ -2,7 +2,8 @@
 from __future__ import annotations
 
 import re
-from decimal import Decimal
+from datetime import date
+from decimal import Decimal, ROUND_HALF_UP
 
 from src.application.dto.loans import LoanDTO, LoanEventDTO
 from src.domain.models.period import Period
@@ -258,3 +259,87 @@ class LoanService:
                 "extra": st.extra,
                 "open_after": st.open_after,
             }
+
+    def apply_pending_interest_events(self) -> int:
+        """Create INTEREST events for all months since last check that are missing.
+
+        Returns the number of newly created events.
+        """
+        today = date.today()
+        created = 0
+
+        with self._uow_factory() as uow:
+            last_check_raw = uow.app_settings.get("loan.last_interest_check")
+            try:
+                last_check = date.fromisoformat(last_check_raw) if last_check_raw else None
+            except Exception:
+                last_check = None
+
+            loans = uow.loans.list_all()
+            for loan in loans:
+                if loan.status.value != "ACTIVE":
+                    continue
+                rate = Decimal(loan.annual_interest_rate or 0)
+                if rate <= 0:
+                    continue
+
+                monthly_rate = (rate / Decimal(12)).quantize(Decimal("0.000001"), rounding=ROUND_HALF_UP)
+
+                start = loan.start_date
+                check_from = last_check or start
+                if check_from < start:
+                    check_from = start
+
+                period_now = Period(today.year, today.month)
+                all_events = uow.loan_events.list_for_loan_until(loan.id, period_now)
+                existing_interest_months = {
+                    (e.year, e.month)
+                    for e in all_events
+                    if e.event_type.value == "INTEREST"
+                }
+
+                y, m = check_from.year, check_from.month
+                while (y, m) < (today.year, today.month):
+                    if (y, m) not in existing_interest_months:
+                        ev_rows = [
+                            {
+                                "event_type": e.event_type.value,
+                                "year": e.year,
+                                "month": e.month,
+                                "amount": e.amount,
+                                "new_regular_payment": e.new_regular_payment,
+                            }
+                            for e in all_events
+                            if (e.year, e.month) < (y, m)
+                        ]
+                        status = compute_month_status(
+                            principal_initial=loan.principal_initial,
+                            regular_payment=loan.regular_payment,
+                            events=ev_rows,
+                            year=y,
+                            month=m,
+                        )
+                        remaining = status.open_after
+                        if remaining > 0:
+                            interest_amt = (remaining * monthly_rate).quantize(
+                                Decimal("0.01"), rounding=ROUND_HALF_UP
+                            )
+                            evt = LoanEvent()
+                            evt.loan_id = loan.id
+                            evt.event_date = date(y, m, 1)
+                            evt.year = y
+                            evt.month = m
+                            evt.event_type = LoanEventType.INTEREST
+                            evt.amount = interest_amt
+                            evt.notes = None
+                            uow.loan_events.upsert(evt)
+                            created += 1
+
+                    m += 1
+                    if m > 12:
+                        m = 1
+                        y += 1
+
+            uow.app_settings.set("loan.last_interest_check", today.isoformat())
+
+        return created

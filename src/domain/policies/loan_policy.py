@@ -26,9 +26,12 @@ def compute_month_status(
     month: int,
 ) -> LoanMonthStatus:
     """
-    MVP: no interest. Apply PAYMENT and EXTRA_PAYMENT reducing principal.
-    PAYMENT amount uses event.amount if present else current regular_payment (considered updated via RATE_CHANGE).
-    RATE_CHANGE updates regular_payment for later PAYMENTs.
+    Apply payment, refinancing and interest events to compute remaining balance.
+
+    - PAYMENT / EXTRA_PAYMENT: reduce principal
+    - REFINANCING: increase principal (new money borrowed)
+    - INTEREST: increase principal (accrued interest added to debt)
+    - RATE_CHANGE: update regular_payment for future PAYMENT events
     """
     principal = principal_initial
     current_payment = regular_payment
@@ -51,18 +54,22 @@ def compute_month_status(
             if amt is None:
                 continue
 
-            # apply if in or before target month (events sorted)
             if (ey < year) or (ey == year and em < month):
                 principal -= amt
             elif ey == year and em == month:
-                principal_before = principal
                 principal -= amt
                 if et == "PAYMENT":
                     payment_this += amt
                 else:
                     extra_this += amt
-                _ = principal_before  # clarity
 
-    open_before = _r2(principal + payment_this + extra_this)  # revert month reductions
+        elif et in {"REFINANCING", "INTEREST"}:
+            amt = e.get("amount")
+            if amt is None:
+                continue
+            if (ey < year) or (ey == year and em <= month):
+                principal += amt
+
+    open_before = _r2(principal + payment_this + extra_this)
     open_after = _r2(open_before - payment_this - extra_this)
     return LoanMonthStatus(_r2(open_before), _r2(payment_this), _r2(extra_this), _r2(open_after))

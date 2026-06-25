@@ -43,6 +43,8 @@ LOAN_EVENT_KEYS: dict[str, str] = {
     "EXTRA_PAYMENT": "loan_event.extra_payment",
     "RATE_CHANGE": "loan_event.rate_change",
     "INTEREST_CHANGE": "loan_event.interest_change",
+    "INTEREST": "loan_event.interest",
+    "REFINANCING": "loan_event.refinancing",
     "NOTE": "loan_event.note",
 }
 

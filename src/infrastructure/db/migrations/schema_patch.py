@@ -192,6 +192,8 @@ def ensure_schema() -> list[str]:
                     "loan_event.extra_payment": {"de": "Sondertilgung", "en": "Extra payment", "fr": "Remboursement anticipé", "es": "Pago extra", "it": "Rimborso extra"},
                     "loan_event.rate_change": {"de": "Ratenänderung", "en": "Rate change", "fr": "Changement de mensualité", "es": "Cambio de cuota", "it": "Modifica rata"},
                     "loan_event.interest_change": {"de": "Zinsänderung", "en": "Interest change", "fr": "Changement de taux", "es": "Cambio de interés", "it": "Modifica interesse"},
+                    "loan_event.interest": {"de": "Zinsen", "en": "Interest", "fr": "Intérêts", "es": "Intereses", "it": "Interessi"},
+                    "loan_event.refinancing": {"de": "Nachfinanzierung", "en": "Refinancing", "fr": "Refinancement", "es": "Refinanciación", "it": "Rifinanziamento"},
                     "loan_event.note": {"de": "Notiz", "en": "Note", "fr": "Note", "es": "Nota", "it": "Nota"},
                     "io.import.unavailable": {"de": "Import-Service nicht verfügbar.", "en": "Import service is not available.", "fr": "Le service d'importation n'est pas disponible.", "es": "El servicio de importación no está disponible.", "it": "Il servizio di importazione non è disponibile."},
                     "io.export.unavailable": {"de": "Export-Service nicht verfügbar.", "en": "Export service is not available.", "fr": "Le service d'exportation n'est pas disponible.", "es": "El servicio de exportación no está disponible.", "it": "Il servizio di esportazione non è disponibile."},
