@@ -26,6 +26,7 @@ from src.application.services.export_service import ExportService
 from src.application.services.backup_service import BackupService
 from src.application.services.security_service import SecurityService
 from src.ui.security.mode_dialog import SecurityModeDialog
+from src.ui.security.lock_overlay import LockOverlay
 from src.application.services.import_service import ImportService
 from src.application.services.income_service import IncomeService
 from src.application.services.loan_service import LoanService
@@ -108,6 +109,8 @@ class MainWindow:
 
         security_menu = tk.Menu(m, tearoff=False)
         m.add_cascade(label=tr("menu.security"), menu=security_menu)
+        security_menu.add_command(label=tr("menu.security.lock"), command=self._lock_app)
+        security_menu.add_separator()
         security_menu.add_command(label=tr("menu.security.mode"), command=self.open_security_mode)
         security_menu.add_command(label=tr("menu.security.pin"), command=self.change_pin)
 
@@ -459,6 +462,22 @@ class MainWindow:
             import sys
 
             os.execv(sys.executable, [sys.executable] + sys.argv)
+
+    def _lock_app(self) -> None:
+        from src.security.manager import SecurityManager
+        sec_path = SecurityManager(self.settings).security_path()
+        cfg = None
+        try:
+            from src.security.security_config import load_security_config
+            cfg = load_security_config(sec_path)
+        except Exception:
+            pass
+
+        if cfg is None or not cfg.has_pin():
+            messagebox.showinfo(tr("lock.unavailable.title"), tr("lock.unavailable.msg"), parent=self.root)
+            return
+
+        LockOverlay(self.root, sec_path)
 
     def open_security_mode(self) -> None:
         try:
