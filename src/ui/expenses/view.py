@@ -148,6 +148,7 @@ class ExpensesView(ttk.Frame):
         self.rec_status_var = tk.StringVar(value=self._all_label)
         self.rec_account_var = tk.StringVar(value=self._all_label)
         self.rec_category_var = tk.StringVar(value=self._all_label)
+        self.rec_freq_var = tk.StringVar(value=self._all_label)
 
         ttk.Label(fr, text=f'{tr("common.status")}:').pack(side="left", padx=(8, 4), pady=4)
         self.rec_status_filter = ttk.Combobox(fr, textvariable=self.rec_status_var, state="readonly", width=12)
@@ -163,6 +164,11 @@ class ExpensesView(ttk.Frame):
         self.rec_category_filter = ttk.Combobox(fr, textvariable=self.rec_category_var, state="readonly", width=28)
         self.rec_category_filter["values"] = (self._all_label,)
         self.rec_category_filter.pack(side="left", pady=4)
+
+        ttk.Label(fr, text=f'{tr("expenses.recurring.col.frequency")}:').pack(side="left", padx=(12, 4), pady=4)
+        self.rec_freq_filter = ttk.Combobox(fr, textvariable=self.rec_freq_var, state="readonly", width=10)
+        self.rec_freq_filter["values"] = (self._all_label,)
+        self.rec_freq_filter.pack(side="left", pady=4)
 
         self.rec_filter_reset_btn = ttk.Button(fr, text=tr("common.reset"))
         self.rec_filter_reset_btn.pack(side="right", padx=8, pady=4)
@@ -194,12 +200,14 @@ class ExpensesView(ttk.Frame):
         self.pay_var_btn = ttk.Button(btns_v, text=tr("expenses.variable.btn.mark_paid"))
         self.delete_var_btn = ttk.Button(btns_v, text=tr("expenses.variable.btn.cancel"))
         self.undo_var_btn = ttk.Button(btns_v, text=tr("expenses.variable.btn.reopen"))
+        self.move_var_btn = ttk.Button(btns_v, text=tr("expenses.variable.btn.move"))
 
         self.add_var_btn.pack(side="left")
         self.edit_var_btn.pack(side="left", padx=(6, 0))
         self.pay_var_btn.pack(side="left", padx=(6, 0))
         self.delete_var_btn.pack(side="left", padx=(6, 0))
         self.undo_var_btn.pack(side="left", padx=(6, 0))
+        self.move_var_btn.pack(side="left", padx=(6, 0))
 
         fv = ttk.LabelFrame(self.tab_variable, text=tr("common.filter"))
         fv.pack(fill="x", pady=(0, 6))
@@ -255,6 +263,7 @@ class ExpensesView(ttk.Frame):
             self.rec_status_filter,
             self.rec_account_filter,
             self.rec_category_filter,
+            self.rec_freq_filter,
             self.var_status_filter,
             self.var_account_filter,
             self.var_category_filter,
@@ -282,6 +291,7 @@ class ExpensesView(ttk.Frame):
             self.rec_status_var.set(self._all_label)
             self.rec_account_var.set(self._all_label)
             self.rec_category_var.set(self._all_label)
+            self.rec_freq_var.set(self._all_label)
             fn()
 
         return _do
@@ -295,7 +305,14 @@ class ExpensesView(ttk.Frame):
 
         return _do
 
-    def set_filter_options(self, *, accounts: list[str], rec_categories: list[str], var_categories: list[str]) -> None:
+    def set_filter_options(
+        self,
+        *,
+        accounts: list[str],
+        rec_categories: list[str],
+        var_categories: list[str],
+        rec_freqs: list[str] = (),
+    ) -> None:
         self.loan_account_filter["values"] = (self._all_label, *accounts)
         if self.loan_account_var.get() not in self.loan_account_filter["values"]:
             self.loan_account_var.set(self._all_label)
@@ -315,6 +332,10 @@ class ExpensesView(ttk.Frame):
         self.var_category_filter["values"] = (self._all_label, *var_categories)
         if self.var_category_var.get() not in self.var_category_filter["values"]:
             self.var_category_var.set(self._all_label)
+
+        self.rec_freq_filter["values"] = (self._all_label, *rec_freqs)
+        if self.rec_freq_var.get() not in self.rec_freq_filter["values"]:
+            self.rec_freq_var.set(self._all_label)
 
     def get_period(self):
         return self.period_selector.get_period()
@@ -337,6 +358,7 @@ class ExpensesView(ttk.Frame):
                 "status": self.rec_status_var.get(),
                 "account": self.rec_account_var.get(),
                 "category": self.rec_category_var.get(),
+                "freq": self.rec_freq_var.get(),
             },
             "variable": {
                 "status": self.var_status_var.get(),

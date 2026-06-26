@@ -164,9 +164,11 @@ class IncomeView(ttk.Frame):
         self.add_special_btn = ttk.Button(btns_s, text=tr("common.new"))
         self.edit_special_btn = ttk.Button(btns_s, text=tr("common.edit"))
         self.delete_special_btn = ttk.Button(btns_s, text=tr("common.delete"))
+        self.move_special_btn = ttk.Button(btns_s, text=tr("income.special.btn.move"))
         self.add_special_btn.pack(side="left")
         self.edit_special_btn.pack(side="left", padx=(6, 0))
         self.delete_special_btn.pack(side="left", padx=(6, 0))
+        self.move_special_btn.pack(side="left", padx=(6, 0))
 
         flt_s = ttk.LabelFrame(self.tab_special, text=tr("common.filter"))
         flt_s.pack(fill="x", pady=(0, 6))
