@@ -90,6 +90,9 @@ class LoanEventType(str, enum.Enum):
     RATE_CHANGE = "RATE_CHANGE"
     INTEREST_CHANGE = "INTEREST_CHANGE"
     INTEREST = "INTEREST"
+    CORRECTION = "CORRECTION"
+    ORGANIZATIONAL_CHANGE = "ORGANIZATIONAL_CHANGE"
+    # Legacy — kept for backward compatibility with existing data
     REFINANCING = "REFINANCING"
     NOTE = "NOTE"
 

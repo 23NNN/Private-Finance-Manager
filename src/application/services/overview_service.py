@@ -225,6 +225,10 @@ class OverviewService:
             other_fix = Decimal("0.00")
 
             for r in recurring_all:
+                cat = categories.get(r.category_id)
+                group = getattr(getattr(cat, "group", None), "value", None) if cat else None
+                if group == ExpenseGroup.LOAN.value:
+                    continue
                 total = Decimal("0.00")
                 for m in range(1, 13):
                     total += allocated_amount(
@@ -439,6 +443,12 @@ class OverviewService:
                 global_view_mode=view_mode,
                 override=r.allocation_override.value if r.allocation_override else None,
             )
+            cat = categories.get(r.category_id)
+            group = getattr(getattr(cat, "group", None), "value", None) if cat else None
+            if group == ExpenseGroup.LOAN.value:
+                # LOAN-category recurring are tracked as debts in the payout summary,
+                # not as fixed costs — exclude them from the Fixkosten account breakdown.
+                continue
             fix_by_acc[r.account_id] = fix_by_acc.get(r.account_id, Decimal("0")) + amt
 
             if _contains_any(r.name, ["abo", "netflix", "spotify", "prime", "vertrag"]):

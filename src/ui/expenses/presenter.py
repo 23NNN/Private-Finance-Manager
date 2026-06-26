@@ -21,6 +21,7 @@ from src.ui.common.dialogs import FieldSpec, FormDialog
 from src.ui.common.error_dialog import show_error, show_warning
 from src.ui.common.i18n import tr
 from src.ui.common.validation import ui_decimal, ui_int
+from src.ui.expenses.loan_event_dialog import DIRECTION_MINUS, DIRECTION_PLUS, LoanEventDialog
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +45,9 @@ LOAN_EVENT_KEYS: dict[str, str] = {
     "RATE_CHANGE": "loan_event.rate_change",
     "INTEREST_CHANGE": "loan_event.interest_change",
     "INTEREST": "loan_event.interest",
+    "CORRECTION": "loan_event.correction",
+    "ORGANIZATIONAL_CHANGE": "loan_event.organizational_change",
+    # Legacy — display only, not offered for new events
     "REFINANCING": "loan_event.refinancing",
     "NOTE": "loan_event.note",
 }
@@ -1126,113 +1130,110 @@ class ExpensesPresenter:
             self._err(tr("common.error"), tr("expenses.error.save_loan_failed"))
 
     def _open_loan_event_dialog(self, loan_id: int, event_id: int | None) -> None:
-        acc_vals = [""] + [f"{a.id}:{a.label}" for a in self._accounts]
-        initial = {
-            "date": str(date.today()),
-            "type_ui": _code_to_ui("PAYMENT", LOAN_EVENT_KEYS),
-            "amount": "0.00",
-            "new_regular_payment": "",
-            "new_interest": "",
-            "override_account": "",
-            "override_timing_ui": "",
-            "notes": "",
-        }
-
-        existing: LoanEventDTO | None = None
+        type_labels = {code: tr(key) for code, key in LOAN_EVENT_KEYS.items()}
         events = self._loan.list_events(loan_id)
 
+        from src.ui.expenses.loan_event_dialog import SELECTABLE_TYPES as _ST
+
+        initial_type = "PAYMENT"
+        initial: dict = {"date": str(date.today()), "amount": "0.00"}
+        selectable = list(_ST)
+
+        # Pre-fill amount from last payment when adding a new event
+        existing: LoanEventDTO | None = None
         if not event_id:
-            last_payment = next(
+            last = next(
                 (e for e in reversed(events) if _v(getattr(e, "event_type", "")) == "PAYMENT" and e.amount),
                 None,
             )
-            if last_payment:
-                initial["amount"] = str(last_payment.amount)
+            if last:
+                initial["amount"] = str(last.amount)
 
         if event_id:
             existing = next((e for e in events if int(e.id) == int(event_id)), None)
             if existing:
-                initial.update(
-                    {
-                        "date": str(existing.event_date),
-                        "type_ui": _code_to_ui(_v(existing.event_type), LOAN_EVENT_KEYS),
-                        "amount": str(existing.amount or 0),
-                        "new_regular_payment": (
-                            str(existing.new_regular_payment) if existing.new_regular_payment is not None else ""
-                        ),
-                        "new_interest": (
-                            str(existing.new_annual_interest_rate) if existing.new_annual_interest_rate is not None else ""
-                        ),
-                        "override_account": (
-                            self._fmt_acc(existing.override_account_id)
-                            if getattr(existing, "override_account_id", None)
-                            else ""
-                        ),
-                        "override_timing_ui": (
-                            self._timing_to_ui(existing.override_payment_timing)
-                            if getattr(existing, "override_payment_timing", None)
-                            else ""
-                        ),
-                        "notes": existing.notes or "",
-                    }
-                )
+                et_code = _v(existing.event_type)
+                initial_type = et_code
+                initial["date"] = str(existing.event_date)
+                initial["notes"] = existing.notes or ""
+                initial["type_label"] = type_labels.get(et_code, et_code)
 
-        fields = [
-            FieldSpec("date", tr("expenses.loan_event.field.date"), "entry", required=True),
-            FieldSpec(
-                "type_ui",
-                tr("expenses.loan_event.field.type"),
-                "combo",
-                required=True,
-                values=[_code_to_ui(k, LOAN_EVENT_KEYS) for k in LOAN_EVENT_KEYS.keys()],
-            ),
-            FieldSpec("amount", tr("expenses.loan_event.field.amount"), "entry", required=True),
-            FieldSpec("new_regular_payment", tr("expenses.loan_event.field.new_regular_payment"), "entry", required=False),
-            FieldSpec("new_interest", tr("expenses.loan_event.field.new_interest"), "entry", required=False),
-            FieldSpec(
-                "override_account",
-                tr("expenses.loan_event.field.override_account"),
-                "combo",
-                required=False,
-                values=acc_vals,
-                width=40,
-            ),
-            FieldSpec(
-                "override_timing_ui",
-                tr("expenses.loan_event.field.override_timing"),
-                "combo",
-                required=False,
-                values=["", _code_to_ui("BEGINNING", PAY_BUCKET_KEYS), _code_to_ui("MID", PAY_BUCKET_KEYS)],
-            ),
-            FieldSpec("notes", tr("expenses.loan_event.field.notes"), "text", required=False, width=40),
-        ]
+                if et_code in {"PAYMENT", "EXTRA_PAYMENT", "INTEREST", "REFINANCING"}:
+                    initial["amount"] = str(existing.amount or "0.00")
 
-        dlg = FormDialog(self._root(), tr("expenses.loan_event.dialog.title"), fields, initial=initial)
-        if not dlg.result:
+                elif et_code == "CORRECTION":
+                    amt = existing.amount or Decimal("0")
+                    initial["amount"] = str(abs(amt))
+                    initial["direction"] = DIRECTION_MINUS if amt < 0 else DIRECTION_PLUS
+
+                elif et_code == "RATE_CHANGE":
+                    initial["new_rate"] = str(existing.new_regular_payment or "")
+
+                elif et_code == "INTEREST_CHANGE":
+                    initial["new_interest_rate"] = str(existing.new_annual_interest_rate or "")
+
+                elif et_code == "ORGANIZATIONAL_CHANGE":
+                    if getattr(existing, "override_payment_timing", None):
+                        initial["org_type"] = tr("loan_event.org_type.period")
+                        initial["new_timing"] = self._timing_to_ui(existing.override_payment_timing)
+                    elif getattr(existing, "override_account_id", None):
+                        initial["org_type"] = tr("loan_event.org_type.account")
+                        initial["new_account"] = self._fmt_acc(existing.override_account_id)
+
+                # Legacy NOTE type: show only notes, no special field
+                elif et_code == "NOTE":
+                    initial["amount"] = "0.00"
+
+                # Allow editing legacy types (add to selectable if not already present)
+                if et_code not in selectable:
+                    selectable = [et_code] + selectable
+
+        dlg = LoanEventDialog(
+            self._root(),
+            accounts=self._accounts,
+            type_labels=type_labels,
+            initial_type=initial_type,
+            initial=initial,
+            selectable_types=selectable,
+        )
+        result = dlg.result
+        if not result:
             return
 
         try:
-            etype = _ui_to_code(dlg.result["type_ui"], LOAN_EVENT_KEYS, default="PAYMENT") or "PAYMENT"
-            amount = ui_decimal(str(dlg.result["amount"]), default=Decimal("0"))
-            new_rate = str(dlg.result.get("new_regular_payment") or "").strip()
-            new_interest = str(dlg.result.get("new_interest") or "").strip()
+            etype = result["event_type"]
+            event_date = parse_date(str(result["date"]))
+            notes = result.get("notes") or None
 
-            override_acc = (
-                self._parse_id_choice(dlg.result.get("override_account") or "") if dlg.result.get("override_account") else None
-            )
-            override_tim = (
-                self._parse_timing_ui(dlg.result.get("override_timing_ui") or "") if dlg.result.get("override_timing_ui") else None
-            )
+            amount: Decimal | None = None
+            new_rate: Decimal | None = None
+            new_interest: Decimal | None = None
+            override_acc: int | None = None
+            override_tim: str | None = None
+
+            if etype in {"PAYMENT", "EXTRA_PAYMENT", "INTEREST", "REFINANCING"}:
+                amount = ui_decimal(str(result.get("amount", "0")), default=Decimal("0"))
+            elif etype == "CORRECTION":
+                amount = ui_decimal(str(result.get("amount", "0")), default=Decimal("0"))
+            elif etype == "RATE_CHANGE":
+                new_rate = ui_decimal(str(result.get("new_rate", "0")))
+            elif etype == "INTEREST_CHANGE":
+                new_interest = ui_decimal(str(result.get("new_interest_rate", "0")))
+            elif etype == "ORGANIZATIONAL_CHANGE":
+                if "new_timing" in result:
+                    override_tim = self._parse_timing_ui(result["new_timing"])
+                elif "new_account" in result:
+                    override_acc = self._parse_id_choice(result["new_account"])
 
             dto = LoanEventDTO(
                 id=event_id,
                 loan_id=loan_id,
-                event_date=parse_date(str(dlg.result["date"])),
+                event_date=event_date,
                 event_type=etype,
                 amount=amount,
-                new_regular_payment=(ui_decimal(new_rate) if new_rate else None),
-                new_annual_interest_rate=(ui_decimal(new_interest) if new_interest else None),
-                notes=str(dlg.result.get("notes") or "").strip() or None,
+                new_regular_payment=new_rate,
+                new_annual_interest_rate=new_interest,
+                notes=notes,
                 override_account_id=override_acc,
                 override_payment_timing=override_tim,
             )
