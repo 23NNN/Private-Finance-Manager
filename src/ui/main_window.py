@@ -612,13 +612,12 @@ def run_app(*, root: ctk.CTk | None = None, on_before_close=None) -> None:
         except Exception:
             pass
 
-    # Apply base TTK theme + dark/light overlay
+    # Apply base TTK theme (must happen before any widget creation)
     try:
         style = ttk.Style(root)
         style.theme_use("clam")
     except Exception:
         pass
-    apply_for_mode(root, ctk.get_appearance_mode())
 
     settings = get_settings()
 
@@ -657,6 +656,8 @@ def run_app(*, root: ctk.CTk | None = None, on_before_close=None) -> None:
             log_path=settings.log_path(),
         )
     w = MainWindow(root, on_before_close=on_before_close)
+    # Apply dark/light overlay AFTER widget tree is built so canvas traversal finds all canvases
+    apply_for_mode(root, ctk.get_appearance_mode())
 
     try:
         root.protocol("WM_DELETE_WINDOW", w._close_app)

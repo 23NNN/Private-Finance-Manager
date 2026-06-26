@@ -5,6 +5,14 @@ import tkinter as tk
 from tkinter import ttk
 
 
+def _canvas_bg() -> str:
+    try:
+        import customtkinter as ctk
+        return "#212121" if ctk.get_appearance_mode().lower() == "dark" else "#f0f0f0"
+    except Exception:
+        return "#f0f0f0"
+
+
 class ScrollArea(ttk.Frame):
     """Scrollable container (vertical + horizontal) with safe mousewheel bindings.
 
@@ -23,7 +31,7 @@ class ScrollArea(ttk.Frame):
     def __init__(self, parent: tk.Widget):
         super().__init__(parent)
 
-        self._canvas = tk.Canvas(self, highlightthickness=0, borderwidth=0)
+        self._canvas = tk.Canvas(self, highlightthickness=0, borderwidth=0, bg=_canvas_bg())
         self._vbar = ttk.Scrollbar(self, orient="vertical", command=self._canvas.yview)
         self._hbar = ttk.Scrollbar(self, orient="horizontal", command=self._canvas.xview)
 
@@ -55,14 +63,20 @@ class ScrollArea(ttk.Frame):
         self._update_scrollbars_visibility()
 
     def _on_canvas_configure(self, _evt=None) -> None:
-        # Expand content to at least canvas size but never shrink below requested size
+        # Expand content to fill canvas when canvas is larger; never shrink below requested size
         try:
             req_w = self.content.winfo_reqwidth()
         except Exception:
             req_w = 1
+        try:
+            req_h = self.content.winfo_reqheight()
+        except Exception:
+            req_h = 1
         canvas_w = max(1, self._canvas.winfo_width())
+        canvas_h = max(1, self._canvas.winfo_height())
         new_w = max(canvas_w, req_w)
-        self._canvas.itemconfigure(self._window_id, width=new_w)
+        new_h = max(canvas_h, req_h)
+        self._canvas.itemconfigure(self._window_id, width=new_w, height=new_h)
         self._update_scrollregion()
         self._update_scrollbars_visibility()
 

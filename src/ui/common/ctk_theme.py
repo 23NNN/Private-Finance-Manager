@@ -115,13 +115,15 @@ def _apply_ttk_style(style: ttk.Style, p: dict[str, str]) -> None:
 
 
 def _apply_canvas_bg(widget: tk.Widget, bg: str) -> None:
-    """Recursively set background of Canvas widgets that are children of TFrame (ScrollArea canvases)."""
+    """Recursively set background of user-managed Canvas widgets (e.g. ScrollArea).
+
+    CTk uses ``place`` for its internal rendering canvases; user canvases use ``grid``
+    or ``pack``. The ``place_info()`` check safely excludes CTk-internal canvases.
+    """
     try:
         cls = widget.winfo_class()
-        if cls == "Canvas":
-            parent_cls = getattr(widget.master, "winfo_class", lambda: "")() if widget.master else ""
-            if parent_cls == "TFrame":
-                widget.configure(bg=bg)  # type: ignore[arg-type]
+        if cls == "Canvas" and not widget.place_info():
+            widget.configure(bg=bg)  # type: ignore[arg-type]
         for child in widget.winfo_children():
             _apply_canvas_bg(child, bg)
     except Exception:
