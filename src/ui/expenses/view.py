@@ -4,6 +4,8 @@ from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk
 
+import customtkinter as ctk
+
 from src.ui.common.controls import create_treeview_with_scrollbars
 from src.ui.common.i18n import tr
 from src.ui.common.period_selector import PeriodSelector
@@ -24,16 +26,18 @@ class ExpensesView(ttk.Frame):
         self.refresh_btn = ttk.Button(top, text=tr("common.refresh"))
         self.refresh_btn.pack(side="right")
 
-        nb = ttk.Notebook(self)
+        nb = ctk.CTkTabview(self, corner_radius=4)
         nb.pack(fill="both", expand=True, pady=(8, 0))
 
-        self.tab_loans = ttk.Frame(nb)
-        self.tab_recurring = ttk.Frame(nb)
-        self.tab_variable = ttk.Frame(nb)
-
-        nb.add(self.tab_loans, text=tr("expenses.tab.loans"))
-        nb.add(self.tab_recurring, text=tr("expenses.tab.recurring"))
-        nb.add(self.tab_variable, text=tr("expenses.tab.variable"))
+        _t_loans = tr("expenses.tab.loans")
+        _t_recurring = tr("expenses.tab.recurring")
+        _t_variable = tr("expenses.tab.variable")
+        nb.add(_t_loans)
+        nb.add(_t_recurring)
+        nb.add(_t_variable)
+        self.tab_loans = nb.tab(_t_loans)
+        self.tab_recurring = nb.tab(_t_recurring)
+        self.tab_variable = nb.tab(_t_variable)
 
         # -------------------- Loans --------------------
         btns_l = ttk.Frame(self.tab_loans)

@@ -8,11 +8,14 @@ import tkinter as tk
 from queue import Queue, Empty
 from tkinter import ttk, filedialog, messagebox
 
+import customtkinter as ctk
+
 from src.ui.common.import_report_dialog import ImportReportDialog
 from src.ui.common.dataset_dialog import DatasetDialog
 from src.ui.common.error_dialog import show_error, show_warning
 from src.ui.common.scroll_area import ScrollArea
 from src.ui.common.i18n import tr, trf, get_i18n
+from src.ui.common.ctk_theme import apply_for_mode
 
 ftrf = trf  # alias used in this module
 
@@ -46,7 +49,7 @@ logger = logging.getLogger(__name__)
 
 
 class MainWindow:
-    def __init__(self, root: tk.Tk, *, on_before_close=None) -> None:
+    def __init__(self, root: ctk.CTk, *, on_before_close=None) -> None:
         self.root = root
         self._on_before_close = on_before_close
         self.root.title(tr("app.title"))
@@ -128,8 +131,6 @@ class MainWindow:
                 svc.set_language(code)
             except Exception:
                 return
-            # Restart for full UI refresh
-            from tkinter import messagebox
             messagebox.showinfo(tr("lang.restart.title"), tr("lang.restart.msg"), parent=self.root)
             self._restart_app()
 
@@ -138,6 +139,23 @@ class MainWindow:
         lang_menu.add_radiobutton(label=tr("lang.fr"), variable=self._lang_var, value="fr", command=lambda: _set_lang("fr"))
         lang_menu.add_radiobutton(label=tr("lang.es"), variable=self._lang_var, value="es", command=lambda: _set_lang("es"))
         lang_menu.add_radiobutton(label=tr("lang.it"), variable=self._lang_var, value="it", command=lambda: _set_lang("it"))
+
+        # Appearance submenu
+        appearance_menu = tk.Menu(m, tearoff=False)
+        m.add_cascade(label=tr("menu.appearance"), menu=appearance_menu)
+        self._appearance_var = tk.StringVar(value=ctk.get_appearance_mode().lower())
+        appearance_menu.add_radiobutton(
+            label=tr("appearance.dark"), variable=self._appearance_var,
+            value="dark", command=lambda: self._set_appearance_mode("dark"),
+        )
+        appearance_menu.add_radiobutton(
+            label=tr("appearance.light"), variable=self._appearance_var,
+            value="light", command=lambda: self._set_appearance_mode("light"),
+        )
+        appearance_menu.add_radiobutton(
+            label=tr("appearance.system"), variable=self._appearance_var,
+            value="system", command=lambda: self._set_appearance_mode("system"),
+        )
 
         file_menu.add_command(label=tr("menu.import.excel"), command=self.import_excel)
         file_menu.add_command(label=tr("menu.import.csv"), command=self.import_csv)
@@ -153,19 +171,19 @@ class MainWindow:
         file_menu.add_command(label=tr("menu.exit"), command=self._close_app)
 
     def _build_ui(self) -> None:
-        container = ttk.Frame(self.root)
+        container = ctk.CTkFrame(self.root, corner_radius=0)
         container.pack(fill="both", expand=True)
 
-        self.nb = ttk.Notebook(container)
-        self.nb.pack(fill="both", expand=True)
+        self.nb = ctk.CTkTabview(container, corner_radius=4)
+        self.nb.pack(fill="both", expand=True, padx=4, pady=(4, 0))
 
         def _wrap_tab(title: str, view_cls):
-            tab = ttk.Frame(self.nb)
+            self.nb.add(title)
+            tab = self.nb.tab(title)
             area = ScrollArea(tab)
             area.pack(fill="both", expand=True)
             view = view_cls(area.content)
             view.pack(fill="both", expand=True)
-            self.nb.add(tab, text=title)
             return view
 
         self.overview_view = _wrap_tab(tr("tab.overview"), OverviewView)
@@ -182,10 +200,23 @@ class MainWindow:
         self.expenses_presenter = ExpensesPresenter(self.expenses_view, self.expense_svc, self.loan_svc, self.ref_svc)
         self.accounts_presenter = AccountsPresenter(self.accounts_view, self.account_svc, self.ref_svc)
 
-        status_bar = ttk.Frame(container)
-        status_bar.pack(fill="x", side="bottom")
+        status_bar = ctk.CTkFrame(container, corner_radius=0, height=28)
+        status_bar.pack(fill="x", side="bottom", pady=(0, 0))
+        status_bar.pack_propagate(False)
         ttk.Label(status_bar, textvariable=self.status).pack(side="left", padx=8, pady=4)
 
+    # -------------------- Appearance --------------------
+    def _set_appearance_mode(self, mode: str) -> None:
+        ctk.set_appearance_mode(mode)
+        apply_for_mode(self.root, mode)
+        try:
+            from src.infrastructure.unit_of_work import UnitOfWork
+            from src.infrastructure.repositories.app_settings import AppSettingRepository
+            with UnitOfWork() as uow:
+                AppSettingRepository(uow.session).set("ui.appearance_mode", mode)
+                uow.commit()
+        except Exception:
+            logger.exception("Failed to persist appearance mode.")
 
     def _ds_labels(self, datasets: list[str]) -> list[str]:
         return [tr(f"dataset.{ds}") for ds in datasets]
@@ -263,7 +294,6 @@ class MainWindow:
     # -------------------- Worker helpers --------------------
     def _set_io_enabled(self, enabled: bool) -> None:
         _ = enabled
-        # optional: disable menu items if desired
 
     def _run_in_worker(self, label: str, func, *args):
         if self._worker_running:
@@ -454,7 +484,6 @@ class MainWindow:
             show_error(self.root, tr("common.error"), str(exc),
                        db_path=self.settings.db_path(), log_path=self.settings.log_path())
 
-
     def _close_app(self, restart: bool = False) -> None:
         """Closes the app (incl. security/DB shutdown hook)."""
         try:
@@ -469,7 +498,6 @@ class MainWindow:
         if restart:
             import os
             import sys
-
             os.execv(sys.executable, [sys.executable] + sys.argv)
 
     def _lock_app(self) -> None:
@@ -504,14 +532,14 @@ class MainWindow:
             new_pin = None
 
             if current == tr("pin.title"):
-                from tkinter import simpledialog, messagebox
+                from tkinter import simpledialog
                 pin = simpledialog.askstring(tr("pin.required.title"), tr("pin.prompt.current"), show="•", parent=self.root)
                 if pin is None:
                     return
                 current_pin = pin.strip()
 
             if new_mode == tr("pin.title"):
-                from tkinter import simpledialog, messagebox
+                from tkinter import simpledialog
                 p1 = simpledialog.askstring(tr("pin.new.title"), tr("pin.prompt.new"), show="•", parent=self.root)
                 if p1 is None:
                     return
@@ -527,7 +555,6 @@ class MainWindow:
                     return
                 new_pin = p1
 
-            from tkinter import messagebox
             if new_mode == "NONE":
                 if not messagebox.askyesno(
                     tr("common.warning"),
@@ -540,13 +567,12 @@ class MainWindow:
             messagebox.showinfo(tr("menu.security"), tr("security.mode_changed_restart.message"), parent=self.root)
             self._close_app()
         except Exception as e:
-            from tkinter import messagebox
             messagebox.showerror(tr("common.error"), ftrf("security.mode_change_failed.message", error=e), parent=self.root)
 
     def change_pin(self) -> None:
         try:
             mode = self.security_svc.get_status().mode
-            from tkinter import messagebox, simpledialog
+            from tkinter import simpledialog
             if mode != tr("pin.title"):
                 messagebox.showinfo(tr("common.notice"), tr("pin.change_unavailable.message"), parent=self.root)
                 return
@@ -574,29 +600,29 @@ class MainWindow:
             messagebox.showinfo(tr("menu.security"), tr("pin.changed_restart.message"), parent=self.root)
             self._close_app()
         except Exception as e:
-            from tkinter import messagebox
             messagebox.showerror(tr("common.error"), ftrf("pin.change_failed.message", error=e), parent=self.root)
 
 
-
-
-def run_app(*, root: tk.Tk | None = None, on_before_close=None) -> None:
+def run_app(*, root: ctk.CTk | None = None, on_before_close=None) -> None:
     if root is None:
-        root = tk.Tk()
+        root = ctk.CTk()
     else:
         try:
             root.deiconify()
         except Exception:
             pass
+
+    # Apply base TTK theme + dark/light overlay
     try:
         style = ttk.Style(root)
-        style.theme_use("vista")
+        style.theme_use("clam")
     except Exception:
         pass
+    apply_for_mode(root, ctk.get_appearance_mode())
 
     settings = get_settings()
 
-    # Healthcheck before UI setup (prevents “mysterious” tab crashes)
+    # Healthcheck before UI setup (prevents "mysterious" tab crashes)
     try:
         issues = run_healthcheck(auto_fix=True)
         if issues:
