@@ -4,6 +4,23 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] — 2026-06-26
+
+### Added
+
+- **Dark Mode (default)**: App launches in dark mode by default; switchable to Light or System-default at runtime via the new "Erscheinungsbild" menu — persists across restarts
+- **CustomTkinter UI**: All tab bars (main window, Expenses, Income) replaced with `CTkTabview` for a modern rounded-pill appearance; full TTK dark/light palette applied to Treeview, filters, labels, buttons, and scrollbars
+- **Interval Filter**: Dropdown filter for the recurring-costs (Fixkosten) list — filter by payment frequency (monthly, quarterly, yearly, etc.)
+- **Move Button**: Dedicated toolbar button "Verschieben" added to the Variable Expenses and Special Income toolbars
+- **Full Context Menu**: Right-click on Variable Expenses now shows Edit / Mark Paid / Cancel / Move; right-click on Special Income shows Edit / Delete / Move
+
+### Fixed
+
+- **Visual gaps**: ScrollArea canvas background now set to the correct dark/light colour at init — no more white flash or colour-mismatch stripes when the window is taller than the content
+- **Dynamic filling**: Content frame now expands to fill the full canvas height when the window is larger than the content, eliminating coloured gaps at the bottom
+
+---
+
 ## [1.1.1] — 2026-06-26
 
 ### Fixed

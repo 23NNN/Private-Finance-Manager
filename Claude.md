@@ -133,7 +133,17 @@ Patches 1–006b + Tasks 1a–3 all done. 108 audit candidates remaining – all
 
 ## Open Issues / Next Priorities
 
-No open issues. All v1.1 features and bugfixes merged to `main`.
+**Aktueller Stand:** `main` = v1.2.0 (released 2026-06-26)
+
+v1.2.0 enthält:
+- IDEA-03: Intervall-Filter für Fixkosten ✅
+- IDEA-02: Verschieben-Button + vollständiges Kontextmenü ✅
+- IDEA-01: CustomTkinter Integration ✅ (CTkTabview, dark mode default, Appearance-Menü)
+- fix: visuelle Lücken (Canvas-bg, Höhenfüllung, apply_for_mode Timing) ✅
+
+### Offenes / Nächste Schritte
+- Optional: CTkButton für Toolbar-Buttons (aktuell ttk.Button, dark via TTK-Styling)
+- Budgetplanung, Reporting/Charts als nächstes größeres Feature
 
 ---
 

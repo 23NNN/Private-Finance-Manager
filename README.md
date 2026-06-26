@@ -7,7 +7,7 @@
     Replace your fragile Excel sheets with a real application. Your data stays local. Always.
   </p>
   <p align="center">
-    <img src="https://img.shields.io/badge/Version-1.1-22c55e" alt="Version 1.1">
+    <img src="https://img.shields.io/badge/Version-1.2-22c55e" alt="Version 1.2">
     <img src="https://img.shields.io/badge/Python-3.11+-3776AB?logo=python&logoColor=white" alt="Python 3.11+">
     <img src="https://img.shields.io/badge/Platform-Windows-0078D6?logo=windows&logoColor=white" alt="Windows">
     <img src="https://img.shields.io/badge/License-MIT-22c55e" alt="MIT License">
