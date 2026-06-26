@@ -205,6 +205,8 @@ class IncomePresenter:
         self._view.hourly_tree.bind("<Delete>", lambda _e: self.delete_hourly())
         self._view.special_tree.bind("<Delete>", lambda _e: self.delete_special())
         self._view.special_tree.bind("<Button-3>", self._show_special_context_menu, add="+")
+        if hasattr(self._view, "move_special_btn"):
+            self._view.move_special_btn.configure(command=self._move_special_dialog)
         self._view.rules_tree.bind("<Delete>", lambda _e: self.delete_rule())
         self._view.savings_rules_tree.bind("<Delete>", lambda _e: self.delete_savings_rule())
 
@@ -777,6 +779,9 @@ class IncomePresenter:
             return
         self._view.special_tree.selection_set(item)
         menu = tk.Menu(self._view.winfo_toplevel(), tearoff=False)
+        menu.add_command(label=tr("income.special.ctx.edit"), command=self.edit_special)
+        menu.add_command(label=tr("income.special.ctx.delete"), command=self.delete_special)
+        menu.add_separator()
         menu.add_command(label=tr("income.special.ctx.move"), command=self._move_special_dialog)
         menu.tk_popup(event.x_root, event.y_root)
 

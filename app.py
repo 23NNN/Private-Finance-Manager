@@ -32,6 +32,23 @@ def _apply_overrides(args: argparse.Namespace) -> None:
         os.environ["FINANZMANAGER_LOG_DIR"] = args.log_dir
 
 
+def _read_appearance_mode(db_path: Path) -> str:
+    """Read ui.appearance_mode from SQLite without full SQLAlchemy engine init."""
+    import sqlite3
+    try:
+        if not db_path.exists():
+            return "dark"
+        with sqlite3.connect(str(db_path)) as con:
+            row = con.execute(
+                "SELECT value FROM app_setting WHERE key = 'ui.appearance_mode'"
+            ).fetchone()
+            if row and row[0] in ("dark", "light", "system"):
+                return row[0]
+    except Exception:
+        pass
+    return "dark"
+
+
 def main(argv: list[str]) -> int:
     args = _parse_args(argv)
     _apply_overrides(args)
@@ -40,17 +57,22 @@ def main(argv: list[str]) -> int:
     settings.data_dir.mkdir(parents=True, exist_ok=True)
     settings.log_dir.mkdir(parents=True, exist_ok=True)
 
+    # Configure CustomTkinter BEFORE creating the root window (CTk requirement)
+    import customtkinter as ctk
+    appearance_mode = _read_appearance_mode(settings.db_path())
+    ctk.set_appearance_mode(appearance_mode)
+    ctk.set_default_color_theme("blue")
+
     from src.infrastructure.logging_setup import configure_logging
     from src.infrastructure.db.engine import init_engine
     from src.infrastructure.db.migrations.runner import upgrade_db_if_possible
     from src.ui.main_window import run_app
 
-    import tkinter as tk
     from src.security.bootstrap import bootstrap_security_and_db
 
     configure_logging(settings.log_path())
 
-    root = tk.Tk()
+    root = ctk.CTk()
     root.withdraw()
 
     engine_cfg, on_before_close = bootstrap_security_and_db(root, settings)

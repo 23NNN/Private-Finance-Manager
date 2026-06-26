@@ -173,6 +173,8 @@ class ExpensesPresenter:
         self._view.rec_tree.bind("<Delete>", lambda _e: self.soft_delete_recurring())
         self._view.var_tree.bind("<Delete>", lambda _e: self.soft_delete_variable())
         self._view.var_tree.bind("<Button-3>", self._show_var_context_menu, add="+")
+        if hasattr(self._view, "move_var_btn"):
+            self._view.move_var_btn.configure(command=self._move_variable_dialog)
         self._view.loan_events_tree.bind("<Delete>", lambda _e: self.delete_selected_event())
 
         # UX: load events on loan select
@@ -299,8 +301,21 @@ class ExpensesPresenter:
             rec_cats_ui = [f"{c.id}:{c.name}" for c in self._cats if _v(c.group) == "FIX"]
             var_cats_ui = [f"{c.id}:{c.name}" for c in self._cats if _v(c.group) == "VARIABLE"]
 
+            # -------------------- Recurring --------------------
+            rec = self._exp.list_recurring()
+            self._rec_by_id = {int(r.id): r for r in rec if getattr(r, "id", None) is not None}
+
             if hasattr(self._view, "set_filter_options"):
-                self._view.set_filter_options(accounts=accounts_ui, rec_categories=rec_cats_ui, var_categories=var_cats_ui)
+                rec_freqs_ui = sorted(
+                    {str(r.frequency_months) for r in rec},
+                    key=lambda x: int(x),
+                )
+                self._view.set_filter_options(
+                    accounts=accounts_ui,
+                    rec_categories=rec_cats_ui,
+                    var_categories=var_cats_ui,
+                    rec_freqs=rec_freqs_ui,
+                )
 
             acc_label = {a.id: a.label for a in self._accounts}
             cat_name = {c.id: c.name for c in self._cats}
@@ -308,14 +323,11 @@ class ExpensesPresenter:
             period = self._view.get_period()
             filters = self._view.get_filters() if hasattr(self._view, "get_filters") else {}
 
-            # -------------------- Recurring --------------------
-            rec = self._exp.list_recurring()
-            self._rec_by_id = {int(r.id): r for r in rec if getattr(r, "id", None) is not None}
-
             f_rec = (filters.get("recurring") or {})
             rec_status_ui = (f_rec.get("status") or self._all_label()).strip()
             rec_acc_id = self._parse_id_choice(f_rec.get("account") or "")
             rec_cat_id = self._parse_id_choice(f_rec.get("category") or "")
+            rec_freq_ui = (f_rec.get("freq") or self._all_label()).strip()
 
             self._view.rec_tree.delete(*self._view.rec_tree.get_children())
             rec_count = 0
@@ -328,6 +340,8 @@ class ExpensesPresenter:
                 if rec_acc_id is not None and getattr(r, "account_id", None) != rec_acc_id:
                     continue
                 if rec_cat_id is not None and getattr(r, "category_id", None) != rec_cat_id:
+                    continue
+                if rec_freq_ui != self._all_label() and str(r.frequency_months) != rec_freq_ui:
                     continue
 
                 status = _code_to_ui(_v(r.status), RECURRING_STATUS_KEYS)
@@ -659,6 +673,10 @@ class ExpensesPresenter:
             return
         self._view.var_tree.selection_set(item)
         menu = tk.Menu(self._root(), tearoff=False)
+        menu.add_command(label=tr("expenses.variable.ctx.edit"), command=self.edit_variable)
+        menu.add_command(label=tr("expenses.variable.ctx.pay"), command=self.pay_variable)
+        menu.add_command(label=tr("expenses.variable.ctx.delete"), command=self.soft_delete_variable)
+        menu.add_separator()
         menu.add_command(label=tr("expenses.variable.ctx.move"), command=self._move_variable_dialog)
         menu.tk_popup(event.x_root, event.y_root)
 

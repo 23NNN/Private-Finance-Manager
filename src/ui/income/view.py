@@ -4,6 +4,8 @@ from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk
 
+import customtkinter as ctk
+
 from src.ui.common.controls import create_treeview_with_scrollbars
 from src.ui.common.period_selector import PeriodSelector
 from src.ui.common.i18n import tr
@@ -22,18 +24,21 @@ class IncomeView(ttk.Frame):
         self.refresh_btn = ttk.Button(top, text=tr("common.refresh"))
         self.refresh_btn.pack(side="right")
 
-        nb = ttk.Notebook(self)
+        nb = ctk.CTkTabview(self, corner_radius=4)
         nb.pack(fill="both", expand=True, pady=(8, 0))
 
-        self.tab_fixed = ttk.Frame(nb)
-        self.tab_hourly = ttk.Frame(nb)
-        self.tab_special = ttk.Frame(nb)
-        self.tab_employers = ttk.Frame(nb)
-
-        nb.add(self.tab_fixed, text=tr("income.tab.fixed"))
-        nb.add(self.tab_hourly, text=tr("income.tab.hourly"))
-        nb.add(self.tab_special, text=tr("income.tab.special"))
-        nb.add(self.tab_employers, text=tr("income.tab.employers"))
+        _t_fixed = tr("income.tab.fixed")
+        _t_hourly = tr("income.tab.hourly")
+        _t_special = tr("income.tab.special")
+        _t_employers = tr("income.tab.employers")
+        nb.add(_t_fixed)
+        nb.add(_t_hourly)
+        nb.add(_t_special)
+        nb.add(_t_employers)
+        self.tab_fixed = nb.tab(_t_fixed)
+        self.tab_hourly = nb.tab(_t_hourly)
+        self.tab_special = nb.tab(_t_special)
+        self.tab_employers = nb.tab(_t_employers)
 
         # -------------------- Fixed salary --------------------
         btns_f = ttk.Frame(self.tab_fixed)
@@ -164,9 +169,11 @@ class IncomeView(ttk.Frame):
         self.add_special_btn = ttk.Button(btns_s, text=tr("common.new"))
         self.edit_special_btn = ttk.Button(btns_s, text=tr("common.edit"))
         self.delete_special_btn = ttk.Button(btns_s, text=tr("common.delete"))
+        self.move_special_btn = ttk.Button(btns_s, text=tr("income.special.btn.move"))
         self.add_special_btn.pack(side="left")
         self.edit_special_btn.pack(side="left", padx=(6, 0))
         self.delete_special_btn.pack(side="left", padx=(6, 0))
+        self.move_special_btn.pack(side="left", padx=(6, 0))
 
         flt_s = ttk.LabelFrame(self.tab_special, text=tr("common.filter"))
         flt_s.pack(fill="x", pady=(0, 6))
