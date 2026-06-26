@@ -31,6 +31,7 @@ def compute_month_status(
     - PAYMENT / EXTRA_PAYMENT: reduce principal
     - REFINANCING: increase principal (new money borrowed)
     - INTEREST: increase principal (accrued interest added to debt)
+    - CORRECTION: adjust principal by signed amount (positive=increase, negative=decrease)
     - RATE_CHANGE: update regular_payment for future PAYMENT events
     """
     principal = principal_initial
@@ -63,7 +64,7 @@ def compute_month_status(
                 else:
                     extra_this += amt
 
-        elif et in {"REFINANCING", "INTEREST"}:
+        elif et in {"REFINANCING", "INTEREST", "CORRECTION"}:
             amt = e.get("amount")
             if amt is None:
                 continue
