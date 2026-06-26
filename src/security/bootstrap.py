@@ -71,15 +71,32 @@ def _setup_first_time(root, settings: Settings) -> SecurityConfig:
         return cfg
 
 
-def _unlock_pin(root, cfg: SecurityConfig) -> str:
-    for _ in range(3):
-        pin = simpledialog.askstring("PIN required", "Please enter your PIN:", show="•", parent=root)
-        if pin is None:
-            raise SystemExit(0)
-        if verify_pin(cfg, pin.strip()):
-            return pin.strip()
-        messagebox.showerror("Incorrect", "PIN is incorrect.", parent=root)
-    raise SystemExit(1)
+def _unlock_pin(root, sec_path: Path, cfg: SecurityConfig) -> str:
+    """Show the same LockOverlay used for in-app lock — consistent PIN UI at startup.
+
+    Called before i18n is initialised, so text strings are passed explicitly.
+    Root is shown temporarily, then re-hidden after the overlay closes.
+    """
+    from src.ui.security.lock_overlay import LockOverlay
+
+    root.geometry("480x340")
+    root.deiconify()
+    root.update()
+
+    overlay = LockOverlay(
+        root,
+        sec_path,
+        title="Privater Finanzmanager",
+        subtitle="Bitte PIN eingeben  /  Please enter PIN",
+        btn_ok="OK",
+        msg_wrong_pin="Falscher PIN. Noch {remaining} Versuch(e) / attempt(s) remaining.",
+    )
+    root.wait_window(overlay)
+    root.withdraw()
+
+    if overlay.verified_pin is None:
+        raise SystemExit(1)
+    return overlay.verified_pin
 
 
 def bootstrap_security_and_db(root, settings: Settings) -> tuple[DbEngineConfig, callable]:
@@ -91,7 +108,7 @@ def bootstrap_security_and_db(root, settings: Settings) -> tuple[DbEngineConfig,
 
     pin: str | None = None
     if cfg.mode_norm() == "PIN":
-        pin = _unlock_pin(root, cfg)
+        pin = _unlock_pin(root, mgr.security_path(), cfg)
 
     # Pre-check: Is SQLCipher driver available?
     sqlcipher_available = mgr.is_sqlcipher_available()
