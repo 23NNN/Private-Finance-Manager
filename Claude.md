@@ -95,6 +95,19 @@ from ui.common.i18n import tr  # WRONG
 
 ---
 
+## Branch-Strategie
+
+| Aspekt | Regel |
+|--------|-------|
+| **main** | Geschützter Release-Branch — kein direkter Push, Merge-only via Pull Request (GitHub Ruleset) |
+| **Feature-Branches** | `feature/<name>` — Merge in main ausschließlich via PR |
+| **Fix-Branches** | `fix/<name>` — Merge in main ausschließlich via PR |
+| **Releases** | GitHub Releases + Tags (Format `vX.Y.Z`) sind die exakte Versionsreferenz |
+| **develop** | Kein permanenter develop-Branch |
+| **Hotfix** | Ad-hoc-Branch von einem Tag: `git checkout -b hotfix/<name> vX.Y.Z` — nicht dauerhaft pflegen |
+
+---
+
 ## i18n System
 
 ### Functions (`src/ui/common/i18n.py`)
