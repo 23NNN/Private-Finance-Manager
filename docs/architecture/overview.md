@@ -76,7 +76,8 @@ Private-Finance-Manager/
 │   │   │   ├── dataset_dialog.py       # DB file / dataset switcher dialog
 │   │   │   ├── category_manager.py     # CRUD dialog for expense categories
 │   │   │   ├── import_export_dialog.py # CSV/Excel import + template download dialog
-│   │   │   └── import_report_dialog.py # Shows result after import run
+│   │   │   ├── import_report_dialog.py # Shows result after import run
+│   │   │   └── ctk_theme.py            # apply_for_mode() – TTK dark/light palette (clam base)
 │   │   ├── accounts/
 │   │   │   ├── view.py                 # Accounts tab – list + CRUD buttons
 │   │   │   └── presenter.py            # Accounts business logic bridge
@@ -92,6 +93,7 @@ Private-Finance-Manager/
 │   │   │   ├── view.py                 # Dashboard tab – charts + KPI tiles
 │   │   │   └── presenter.py            # Overview aggregation bridge
 │   │   └── security/
+│   │       ├── lock_overlay.py         # In-app + startup lock screen (PIN verification)
 │   │       └── mode_dialog.py          # Security mode setup dialog (PIN, Device, None)
 │   ├── application/
 │   │   ├── services/                   # 15 service modules (CRUD, import, export, i18n, …)
