@@ -177,9 +177,11 @@ behoben + regressionsgetestet), UnitOfWork übersetzt DB-Exceptions zu `DomainEr
 diff-scoped + Pytest), Dependency-Pinning, `.idea/` entfernt.
 
 ### Offenes / Nächste Schritte
-- **Bug gefunden, noch offen:** `import_service.py:746` ruft `uow.commit()` auf — `UnitOfWork` hat
-  keine `commit()`-Methode → jeder erfolgreiche CSV/Excel-Import crasht mit `AttributeError`. Nicht
-  im aktuellen Branch gefixt (außerhalb des vereinbarten Scopes), braucht eigenen Fix + Test.
+- **v1.2.2:** CSV-Import repariert für 4/10 Datensatz-Typen (accounts, employers, pay_rules,
+  categories). Die anderen 6 (income_fixed, income_hourly, expense_recurring, expense_variable,
+  loans, loan_events) zielen auf ein veraltetes Datenmodell und werden bewusst mit klarer
+  Fehlermeldung abgewiesen statt zu raten — Neudesign des CSV-Spaltenformats ist ein separates
+  Produktthema, kein Bugfix. Details: HANDOVER.md.
 - 782 vorbestehende Ruff-Fehler auf `main` (v.a. Zeilenlänge) — CI lintet vorerst nur Diff-Dateien.
 - Optional: CTkButton für Toolbar-Buttons (aktuell ttk.Button, dark via TTK-Styling)
 - Budgetplanung, Reporting/Charts als nächstes größeres Feature
