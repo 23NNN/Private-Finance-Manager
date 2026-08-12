@@ -161,8 +161,9 @@ without `.git`, `.venv`, `dist/`, `build`.
 → Run `python scripts/i18n_audit.py`
 
 ### Change CSV/Excel import behavior
-→ `src/application/importers/csv_importer.py` or `excel_importer.py`
-→ `src/application/services/import_service.py`
+→ Excel: `src/application/importers/excel_importer.py` (covers all datasets)
+→ CSV: `src/application/services/import_service.py` (`import_csv()` parses via `infrastructure/io/csv_reader.py` directly — `importers/csv_importer.py` is an unused, orphaned module, not the actual CSV path)
+→ CSV only supports `ImportService.CSV_DATASETS` minus `_UNSUPPORTED_CSV_DATASETS` (schema-incompatible datasets are rejected with a clear error rather than guessing a column mapping)
 → `src/ui/common/import_export_dialog.py`
 
 ### Change security / encryption behavior

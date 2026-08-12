@@ -188,7 +188,8 @@ Output: `dist\Finanzmanager\Finanzmanager.exe`
 Menu: **File → Import Excel…** / **Import CSV…** / **Export CSV…**
 
 - **Excel import:** full template (xlsx) covering all data types
-- **CSV import/export:** select dataset (accounts, employers, income, expenses, loans …)
+- **CSV import:** accounts, employers, pay rules, and categories only — other datasets (income, expense, loan records) require the Excel import
+- **CSV export:** all datasets
 - **Template download:** File → Download CSV Template… / Download Excel Template…
 
 CSV delimiter: `;` (Excel-friendly for European locales).
