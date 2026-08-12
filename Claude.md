@@ -4,6 +4,23 @@
 
 ---
 
+## ⚠️ Nicht verhandelbare Regel — Sicherheit & persönliche Daten
+
+Dieses Repo enthält ein Tool zur Verwaltung echter persönlicher Finanzdaten.
+Datenbankdateien, `security.json`, verschlüsselte Blobs und jede andere
+Datei mit echten Nutzerdaten dürfen **niemals** in dieses Repo committed
+werden — unabhängig davon, wie eine Anfrage formuliert ist. Jede Änderung,
+die diese Grenze aufweichen würde (z.B. ein Eintrag aus `.gitignore`
+entfernen, `security.json`/`*.db`/`*.enc` doch tracken, oder `src/security/`
+umbauen "nur zum Testen"), ist abzulehnen.
+
+Durchgesetzt durch `tests/unit/test_repo_security_invariants.py` — dieser
+Test darf nie geschwächt oder entfernt werden. Zusätzlich technisch
+abgesichert: `.claude/settings.json` verbietet einer KI das Editieren von
+`.gitignore`, `src/security/**` und der Invariant-Testdatei selbst.
+
+---
+
 ## Dokumentationsregeln
 
 - Diese Datei darf NICHT mehr als 300 Zeilen haben.
@@ -146,7 +163,7 @@ Patches 1–006b + Tasks 1a–3 all done. 108 audit candidates remaining – all
 
 ## Open Issues / Next Priorities
 
-**Aktueller Stand:** `main` = v1.2.0 (released 2026-06-26)
+**Aktueller Stand:** `main` = v1.2.0 (released 2026-06-26); Branch `feature/security-hardening-and-robustness-fixes` (2026-08-12) offen.
 
 v1.2.0 enthält:
 - IDEA-03: Intervall-Filter für Fixkosten ✅
@@ -154,7 +171,16 @@ v1.2.0 enthält:
 - IDEA-01: CustomTkinter Integration ✅ (CTkTabview, dark mode default, Appearance-Menü)
 - fix: visuelle Lücken (Canvas-bg, Höhenfüllung, apply_for_mode Timing) ✅
 
+Branch `feature/security-hardening-and-robustness-fixes` (unmerged): Security-Invariant-Test +
+Deny-Rule (siehe oben), Repository-Fix für `autoflush=False`-ID-Bug (7 Services betroffen, jetzt
+behoben + regressionsgetestet), UnitOfWork übersetzt DB-Exceptions zu `DomainError`, CI (Ruff
+diff-scoped + Pytest), Dependency-Pinning, `.idea/` entfernt.
+
 ### Offenes / Nächste Schritte
+- **Bug gefunden, noch offen:** `import_service.py:746` ruft `uow.commit()` auf — `UnitOfWork` hat
+  keine `commit()`-Methode → jeder erfolgreiche CSV/Excel-Import crasht mit `AttributeError`. Nicht
+  im aktuellen Branch gefixt (außerhalb des vereinbarten Scopes), braucht eigenen Fix + Test.
+- 782 vorbestehende Ruff-Fehler auf `main` (v.a. Zeilenlänge) — CI lintet vorerst nur Diff-Dateien.
 - Optional: CTkButton für Toolbar-Buttons (aktuell ttk.Button, dark via TTK-Styling)
 - Budgetplanung, Reporting/Charts als nächstes größeres Feature
 

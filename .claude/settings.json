@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "deny": [
+      "Edit(.gitignore)",
+      "Write(.gitignore)",
+      "Edit(src/security/**)",
+      "Write(src/security/**)",
+      "Edit(tests/unit/test_repo_security_invariants.py)",
+      "Write(tests/unit/test_repo_security_invariants.py)"
+    ]
+  }
+}
