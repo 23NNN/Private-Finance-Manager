@@ -18,6 +18,7 @@ class SavingsGoalRepository(Repository):
 
     def upsert(self, obj: SavingsGoal) -> SavingsGoal:
         self.session.add(obj)
+        self.session.flush()  # assigns obj.id for newly created rows (session uses autoflush=False)
         return obj
 
     def delete(self, goal_id: int) -> None:
@@ -55,6 +56,7 @@ class SavingsRuleRepository(Repository):
 
     def upsert(self, obj: SavingsRule) -> SavingsRule:
         self.session.add(obj)
+        self.session.flush()  # assigns obj.id for newly created rows (session uses autoflush=False)
         return obj
 
     def delete(self, rule_id: int) -> None:
@@ -75,6 +77,7 @@ class SavingsContributionRepository(Repository):
 
     def upsert(self, obj: SavingsContribution) -> SavingsContribution:
         self.session.add(obj)
+        self.session.flush()  # assigns obj.id for newly created rows (session uses autoflush=False)
         return obj
 
     def delete(self, contrib_id: int) -> None:

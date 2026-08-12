@@ -1,11 +1,14 @@
 # infrastructure/db/engine.py
 from __future__ import annotations
 
+import logging
 from typing import Any, Callable
 
 from sqlalchemy import create_engine
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, sessionmaker
+
+logger = logging.getLogger(__name__)
 
 _ENGINE: Engine | None = None
 _SessionFactory: sessionmaker | None = None
@@ -48,7 +51,7 @@ def dispose_engine() -> None:
         try:
             _ENGINE.dispose()
         except Exception:
-            pass
+            logger.exception("Failed to dispose DB engine cleanly")
 
 
 def get_engine() -> Engine:

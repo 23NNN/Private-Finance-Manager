@@ -1,12 +1,20 @@
 # src/infrastructure/unit_of_work.py
 from __future__ import annotations
 
+from sqlalchemy.exc import IntegrityError, OperationalError
 from sqlalchemy.orm import Session
 
+from src.domain.errors import DomainError
 from src.infrastructure.db.engine import SessionLocal
 from src.infrastructure.repositories.accounts import AccountRepository
+from src.infrastructure.repositories.app_settings import AppSettingRepository
 from src.infrastructure.repositories.employers import EmployerRepository
-from src.infrastructure.repositories.expenses import CategoryRepository, ExpenseRecurringRepository, ExpenseVariableRepository
+from src.infrastructure.repositories.expenses import (
+    CategoryRepository,
+    ExpenseRecurringRepository,
+    ExpenseVariableRepository,
+)
+from src.infrastructure.repositories.i18n_strings import I18nStringRepository
 from src.infrastructure.repositories.import_runs import ImportRunRepository
 from src.infrastructure.repositories.income_fixed import IncomeFixedRepository
 from src.infrastructure.repositories.income_hourly import IncomeHourlyRepository
@@ -14,9 +22,11 @@ from src.infrastructure.repositories.income_special import IncomeSpecialReposito
 from src.infrastructure.repositories.loan_events import LoanEventRepository
 from src.infrastructure.repositories.loans import LoanRepository
 from src.infrastructure.repositories.pay_rules import PayRuleRepository
-from src.infrastructure.repositories.savings import SavingsContributionRepository, SavingsGoalRepository, SavingsRuleRepository
-from src.infrastructure.repositories.app_settings import AppSettingRepository
-from src.infrastructure.repositories.i18n_strings import I18nStringRepository
+from src.infrastructure.repositories.savings import (
+    SavingsContributionRepository,
+    SavingsGoalRepository,
+    SavingsRuleRepository,
+)
 
 __all__ = ["UnitOfWork"]
 
@@ -61,9 +71,15 @@ class UnitOfWork:
         assert self._session is not None
         try:
             if exc_type is None:
-                self._session.commit()
+                try:
+                    self._session.commit()
+                except (IntegrityError, OperationalError) as db_exc:
+                    self._session.rollback()
+                    raise DomainError(str(db_exc.orig) if db_exc.orig else str(db_exc)) from db_exc
             else:
                 self._session.rollback()
+                if isinstance(exc, (IntegrityError, OperationalError)):
+                    raise DomainError(str(exc.orig) if exc.orig else str(exc)) from exc
         finally:
             self._session.close()
             self._session = None

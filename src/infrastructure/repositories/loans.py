@@ -27,6 +27,7 @@ class LoanRepository:
             self._s.add(obj)
         else:
             self._s.merge(obj)
+        self._s.flush()  # assigns obj.id for newly created rows (session uses autoflush=False)
 
     def set_status(self, loan_id: int, status: LoanStatus) -> None:
         obj = self.get(loan_id)

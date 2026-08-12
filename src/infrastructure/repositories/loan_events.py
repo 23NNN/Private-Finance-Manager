@@ -102,6 +102,7 @@ class LoanEventRepository:
             self._s.add(obj)
         else:
             self._s.merge(obj)
+        self._s.flush()  # assigns obj.id for newly created rows (session uses autoflush=False)
 
     def delete(self, event_id: int) -> None:
         obj = self.get(event_id)

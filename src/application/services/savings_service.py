@@ -48,13 +48,13 @@ class SavingsService:
             obj.account_id = dto.account_id
             obj.notes = dto.notes
 
-            uow.savings_contribs.upsert(obj)
+            uow.savings_contributions.upsert(obj)
             return obj.id
 
     def list_contributions(self, goal_id: int) -> list[SavingsContributionDTO]:
         with self._uow_factory() as uow:
             out: list[SavingsContributionDTO] = []
-            for c in uow.savings_contribs.list_for_goal(goal_id):
+            for c in uow.savings_contributions.list_for_goal(goal_id):
                 out.append(
                     SavingsContributionDTO(
                         id=c.id,

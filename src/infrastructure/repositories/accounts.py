@@ -24,6 +24,7 @@ class AccountRepository(Repository):
     def upsert(self, obj: Account) -> Account:
         # Works for both new and existing instances.
         self.session.add(obj)
+        self.session.flush()  # assigns obj.id for newly created rows (session uses autoflush=False)
         return obj
 
     def delete(self, account_id: int) -> None:
