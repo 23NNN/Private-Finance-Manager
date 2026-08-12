@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.2.1] — 2026-08-12
+
 ### Fixed
 
 - **Repository upsert returns real IDs**: `upsert_*()` methods across 7 services returned `None` instead of the new row's ID because the DB session runs with `autoflush=False` and no flush happened before the ID was read. Repositories now flush after `add()`.
