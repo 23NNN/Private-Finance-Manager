@@ -61,8 +61,9 @@ This project follows **Clean Architecture**. Before making changes, understand w
 Run these before every commit:
 
 ```powershell
-# Linting
-python -m ruff check src/
+# Linting (only the files your change touches — main carries pre-existing
+# lint debt that CI does not enforce repo-wide; see .github/workflows/ci.yml)
+python -m ruff check <your changed files>
 
 # Tests
 python -m pytest -q

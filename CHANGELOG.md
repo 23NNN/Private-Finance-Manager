@@ -4,6 +4,28 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- **Repository upsert returns real IDs**: `upsert_*()` methods across 7 services returned `None` instead of the new row's ID because the DB session runs with `autoflush=False` and no flush happened before the ID was read. Repositories now flush after `add()`.
+- **SavingsService crash**: `add_contribution()`/`list_contributions()` referenced a non-existent `UnitOfWork` attribute and raised `AttributeError` on every call.
+- **Silent exception swallowing**: engine dispose and loan-event settings parsing now log via `logging.exception()` instead of discarding the error.
+
+### Security
+
+- Added a non-negotiable rule (CLAUDE.md) that personal financial data and DB files must never be committed and that the security boundary must never be weakened by an AI agent, enforced by `tests/unit/test_repo_security_invariants.py` and technical `.claude/settings.json` permission-deny rules on `.gitignore`, `src/security/**`, and the invariant test itself.
+
+### Added
+
+- `.github/workflows/ci.yml`: runs `pytest` and diff-scoped `ruff` on every PR/push to `main`.
+
+### Changed
+
+- `UnitOfWork` now translates SQLAlchemy `IntegrityError`/`OperationalError` into `DomainError` instead of letting them propagate raw.
+- Dependencies in `pyproject.toml` pinned (exact pins for dev tools, upper bounds for runtime deps).
+- Removed 6 `.idea/*.xml` files from version control (predated the `.idea/` gitignore rule).
+
 ## [1.2.0] — 2026-06-26
 
 ### Added

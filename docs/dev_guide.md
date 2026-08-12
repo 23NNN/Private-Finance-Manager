@@ -102,6 +102,7 @@ Config:
 
 - Focus: Domain Policies + Services are testable without UI.
 - Tests import via `src` (Repo-Root in `sys.path` via `tests/conftest.py`).
+- CI (`.github/workflows/ci.yml`) runs `pytest` and diff-scoped `ruff` automatically on every PR/push to `main`.
 
 Run:
 ```powershell
