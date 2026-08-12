@@ -1,15 +1,18 @@
 # finanzmanager/application/services/loan_service.py
 from __future__ import annotations
 
+import logging
 import re
 from datetime import date
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import ROUND_HALF_UP, Decimal
 
 from src.application.dto.loans import LoanDTO, LoanEventDTO
 from src.domain.models.period import Period
 from src.domain.policies.loan_policy import compute_month_status
 from src.infrastructure.db.orm_models import Loan, LoanEvent, LoanEventType, LoanStatus, PaymentTiming
 from src.infrastructure.unit_of_work import UnitOfWork
+
+logger = logging.getLogger(__name__)
 
 _SETTINGS_RE = re.compile(r"\[\[SETTINGS(?P<body>.*?)\]\]", re.IGNORECASE | re.DOTALL)
 
@@ -65,18 +68,18 @@ class LoanService:
         with self._uow_factory() as uow:
             return [
                 LoanDTO(
-                    id=l.id,
-                    name=l.name,
-                    start_date=l.start_date,
-                    principal_initial=l.principal_initial,
-                    annual_interest_rate=l.annual_interest_rate,
-                    regular_payment=l.regular_payment,
-                    payment_timing=l.payment_timing.value,
-                    account_id=l.account_id,
-                    status=l.status.value,
-                    notes=l.notes,
+                    id=loan.id,
+                    name=loan.name,
+                    start_date=loan.start_date,
+                    principal_initial=loan.principal_initial,
+                    annual_interest_rate=loan.annual_interest_rate,
+                    regular_payment=loan.regular_payment,
+                    payment_timing=loan.payment_timing.value,
+                    account_id=loan.account_id,
+                    status=loan.status.value,
+                    notes=loan.notes,
                 )
-                for l in uow.loans.list_all()
+                for loan in uow.loans.list_all()
             ]
 
     def upsert_loan(self, dto: LoanDTO) -> int:
@@ -210,12 +213,18 @@ class LoanService:
                     try:
                         account_id = int(s["account_id"])
                     except Exception:
-                        pass
+                        logger.exception(
+                            "Malformed account_id in loan event notes (loan_id=%s, event_id=%s): %r",
+                            loan_id, e.id, s["account_id"],
+                        )
                 if "payment_timing" in s:
                     try:
                         payment_timing = PaymentTiming(s["payment_timing"]).value
                     except Exception:
-                        pass
+                        logger.exception(
+                            "Malformed payment_timing in loan event notes (loan_id=%s, event_id=%s): %r",
+                            loan_id, e.id, s["payment_timing"],
+                        )
 
             return {"account_id": account_id, "payment_timing": payment_timing}
 

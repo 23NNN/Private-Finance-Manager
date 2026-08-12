@@ -31,7 +31,7 @@ Global UI conventions:
 ### Infrastructure (`src/infrastructure/`)
 - **SQLAlchemy ORM Models** represent DB tables
 - **Repositories** encapsulate SQL/queries
-- **UnitOfWork** manages session/transaction
+- **UnitOfWork** manages session/transaction; translates SQLAlchemy `IntegrityError`/`OperationalError` into `DomainError` at commit time (and when a flush inside the `with` block raises early), so raw DB exceptions never leak past the infrastructure boundary
 - **Migrations** via Alembic under `src/infrastructure/db/migrations/`
 - **Logging** centralized in `src/infrastructure/logging_setup.py`
 

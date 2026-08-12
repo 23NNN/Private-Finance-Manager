@@ -49,6 +49,7 @@ class PayRuleRepository(Repository):
 
     def upsert(self, obj: PayRule) -> PayRule:
         self.session.add(obj)
+        self.session.flush()  # assigns obj.id for newly created rows (session uses autoflush=False)
         return obj
 
     def delete(self, rule_id: int) -> None:

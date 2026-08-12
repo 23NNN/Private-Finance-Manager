@@ -23,6 +23,7 @@ class EmployerRepository(Repository):
 
     def upsert(self, obj: Employer) -> Employer:
         self.session.add(obj)
+        self.session.flush()  # assigns obj.id for newly created rows (session uses autoflush=False)
         return obj
 
     def delete(self, employer_id: int) -> None:

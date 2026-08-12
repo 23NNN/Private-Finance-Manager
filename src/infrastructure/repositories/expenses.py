@@ -26,6 +26,7 @@ class ExpenseCategoryRepository(Repository):
 
     def upsert(self, obj: ExpenseCategory) -> ExpenseCategory:
         self.session.add(obj)
+        self.session.flush()  # assigns obj.id for newly created rows (session uses autoflush=False)
         return obj
 
     def delete(self, category_id: int) -> None:
@@ -47,6 +48,7 @@ class ExpenseRecurringRepository(Repository):
 
     def upsert(self, obj: ExpenseRecurring) -> ExpenseRecurring:
         self.session.add(obj)
+        self.session.flush()  # assigns obj.id for newly created rows (session uses autoflush=False)
         return obj
 
 
@@ -64,4 +66,5 @@ class ExpenseVariableRepository(Repository):
 
     def upsert(self, obj: ExpenseVariable) -> ExpenseVariable:
         self.session.add(obj)
+        self.session.flush()  # assigns obj.id for newly created rows (session uses autoflush=False)
         return obj

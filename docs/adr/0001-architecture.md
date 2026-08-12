@@ -30,3 +30,6 @@ Requirements:
 
 ## Update (Security)
 Since the initial ADR, security was extended: optional local DB encryption (SQLCipher, crash-safe) plus PIN/device protection. The core architecture (Clean Architecture + MVP + local DB as source of truth) remains unchanged.
+
+## Update (Error Handling)
+`UnitOfWork` (`src/infrastructure/unit_of_work.py`) now translates SQLAlchemy `IntegrityError`/`OperationalError` into `DomainError` (`src/domain/errors.py`) at the transaction boundary, instead of letting raw infrastructure exceptions propagate into Application/UI. This closes a gap where a DB constraint violation would previously surface as an unhandled SQLAlchemy exception outside the infrastructure layer.

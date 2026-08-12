@@ -24,7 +24,11 @@ class IncomeHourlyRepository:
         return list(self._s.execute(stmt).scalars().all())
 
     def list_for_year(self, year: int) -> list[IncomeHourly]:
-        stmt = select(IncomeHourly).where(IncomeHourly.year == year).order_by(IncomeHourly.month, IncomeHourly.employer_id)
+        stmt = (
+            select(IncomeHourly)
+            .where(IncomeHourly.year == year)
+            .order_by(IncomeHourly.month, IncomeHourly.employer_id)
+        )
         return list(self._s.execute(stmt).scalars().all())
 
     def get_by_emp_period(self, employer_id: int, year: int, month: int) -> IncomeHourly | None:
@@ -41,6 +45,7 @@ class IncomeHourlyRepository:
             self._s.add(obj)
         else:
             self._s.merge(obj)
+        self._s.flush()  # assigns obj.id for newly created rows (session uses autoflush=False)
 
     def delete(self, row_id: int) -> None:
         obj = self.get(row_id)
