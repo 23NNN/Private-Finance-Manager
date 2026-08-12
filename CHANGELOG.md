@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.2.2] — 2026-08-13
+
+### Fixed
+
+- **CSV import was comprehensively broken**: every dataset type in `ImportService.import_csv()` called nonexistent repository/`UnitOfWork` methods (`.add()` instead of `.upsert()`, `uow.flush()`/`uow.commit()`, neither of which exist), and 6 of 10 dataset types constructed ORM objects using fields from an older, no-longer-existing schema. `accounts`, `employers`, `pay_rules`, and `categories` CSV import now work correctly. `income_fixed`, `income_hourly`, `expense_recurring`, `expense_variable`, `loans`, and `loan_events` are explicitly rejected with a clear error (use the Excel import instead) rather than crashing or silently producing wrong data — repairing them requires designing a new CSV column contract, tracked as a follow-up.
+- `ImportRun` creation used a nonexistent `file_path` field and local time instead of the model's UTC convention; fixed to match the working Excel-import path.
+
 ## [1.2.1] — 2026-08-12
 
 ### Fixed
