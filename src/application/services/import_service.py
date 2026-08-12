@@ -4,37 +4,25 @@ from __future__ import annotations
 import hashlib
 import re
 from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import datetime
 from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
 from sqlalchemy import select
 
-from src.application.validators.parsers import parse_bool, parse_date, parse_decimal, parse_int, parse_month
+from src.application.validators.parsers import parse_bool, parse_decimal
 from src.infrastructure.db.orm_models import (
     Account,
     AllocationOverride,
     Employer,
     ExpenseCategory,
     ExpenseGroup,
-    ExpenseRecurring,
-    ExpenseVariable,
     ImportRun,
-    IncomeFixed,
-    IncomeHourly,
-    Loan,
-    LoanEvent,
-    LoanEventType,
-    LoanStatus,
-    PayBucket,
+    PayoutTiming,
     PayRule,
     PayRuleType,
     PayRuleUnit,
-    PaymentTiming,
-    PayoutTiming,
-    RecurringStatus,
-    VariableStatus,
 )
 from src.infrastructure.io.csv_reader import read_csv_dicts
 from src.infrastructure.unit_of_work import UnitOfWork
@@ -76,17 +64,6 @@ def _get(row: dict[str, str], *keys: str) -> str | None:
         if kk in row:
             return row.get(kk)
     return None
-
-
-def _pay_bucket_from_any(value: Any) -> PayBucket:
-    s = _norm(value).lower()
-    if not s or s in {"-", "—", "none", "kein", "keine", "nichts"}:
-        return PayBucket.NONE
-    if s.startswith("anfang") or s in {"beginning", "start"}:
-        return PayBucket.BEGINNING
-    if s.startswith("mitte") or s == "mid":
-        return PayBucket.MID
-    raise ValueError(f"Unbekannter Zahlungszeitpunkt (pay_bucket): {value!r}")
 
 
 def _alloc_override_from_any(value: Any) -> AllocationOverride | None:
@@ -144,30 +121,6 @@ def _unit_from_any(value: Any) -> PayRuleUnit:
         raise ValueError(f"Unbekannte Einheit: {s!r}") from e
 
 
-def _recurring_status_from_any(value: Any) -> RecurringStatus:
-    s = _norm(value).lower()
-    if not s:
-        return RecurringStatus.ACTIVE
-    if s in {"aktiv", "active"}:
-        return RecurringStatus.ACTIVE
-    if s in {"inaktiv", "inactive"}:
-        return RecurringStatus.INACTIVE
-    return RecurringStatus(_norm(value))
-
-
-def _variable_status_from_any(value: Any) -> VariableStatus:
-    s = _norm(value).lower()
-    if not s:
-        return VariableStatus.OPEN
-    if s in {"offen", "open"}:
-        return VariableStatus.OPEN
-    if s in {"bezahlt", "paid"}:
-        return VariableStatus.PAID
-    if s in {"storniert", "cancelled", "canceled"}:
-        return VariableStatus.CANCELLED
-    return VariableStatus(_norm(value))
-
-
 def _expense_group_from_any(value: Any) -> ExpenseGroup:
     s = _norm(value).lower()
     if not s:
@@ -190,46 +143,6 @@ def _payout_timing_from_any(value: Any) -> PayoutTiming:
     if s.startswith("mitte") or s == "mid":
         return PayoutTiming.MID
     return PayoutTiming(_norm(value))
-
-
-def _payment_timing_from_any(value: Any) -> PaymentTiming:
-    s = _norm(value).lower()
-    if not s:
-        return PaymentTiming.MID
-    if s.startswith("anfang") or s == "beginning":
-        return PaymentTiming.BEGINNING
-    if s.startswith("mitte") or s == "mid":
-        return PaymentTiming.MID
-    return PaymentTiming(_norm(value))
-
-
-_LOAN_STATUS_DE = {"aktiv": LoanStatus.ACTIVE, "geschlossen": LoanStatus.CLOSED}
-_EVENT_TYPE_DE = {
-    "zahlung": LoanEventType.PAYMENT,
-    "extra": LoanEventType.EXTRA_PAYMENT,
-    "extra_zahlung": LoanEventType.EXTRA_PAYMENT,
-    "notiz": LoanEventType.NOTE,
-    "rate_aenderung": LoanEventType.RATE_CHANGE,
-    "zins_aenderung": LoanEventType.INTEREST_CHANGE,
-}
-
-
-def _loan_status_from_any(value: Any) -> LoanStatus:
-    s = _norm(value).lower()
-    if not s:
-        return LoanStatus.ACTIVE
-    if s in _LOAN_STATUS_DE:
-        return _LOAN_STATUS_DE[s]
-    return LoanStatus(_norm(value))
-
-
-def _event_type_from_any(value: Any) -> LoanEventType:
-    s = _norm(value).lower()
-    if not s:
-        return LoanEventType.PAYMENT
-    if s in _EVENT_TYPE_DE:
-        return _EVENT_TYPE_DE[s]
-    return LoanEventType(_norm(value))
 
 
 def _ensure_default_categories(uow: UnitOfWork) -> None:
@@ -259,6 +172,20 @@ class ImportService:
         "loan_events",
     ]
 
+    # These target an older data model (e.g. name+is_active based income
+    # rows) that no longer matches the current schema (period/account/FK
+    # based). Fixing them requires designing a new CSV column contract per
+    # dataset, not a bug fix — rejected explicitly instead of silently
+    # producing wrong or crashing imports. Use the Excel import instead.
+    _UNSUPPORTED_CSV_DATASETS = {
+        "income_fixed",
+        "income_hourly",
+        "expense_recurring",
+        "expense_variable",
+        "loans",
+        "loan_events",
+    }
+
     def __init__(self, uow_factory=UnitOfWork) -> None:
         self._uow_factory = uow_factory
 
@@ -272,6 +199,11 @@ class ImportService:
             dataset = "categories"
         if dataset not in self.CSV_DATASETS:
             raise ValueError(f"Unbekannter Datensatz: {dataset}")
+        if dataset in self._UNSUPPORTED_CSV_DATASETS:
+            raise ValueError(
+                f"CSV-Import für '{dataset}' wird aktuell nicht unterstützt "
+                "(Datenmodell nicht kompatibel) — bitte den Excel-Import verwenden."
+            )
 
         p = Path(path)
         if not p.exists():
@@ -286,8 +218,7 @@ class ImportService:
         issues: list[ImportIssue] = []
 
         with self._uow_factory() as uow:
-            already = uow.import_runs.get_by_file_hash(h)
-            if already:
+            if uow.import_runs.exists_hash(h):
                 return {"status": "skipped", "reason": "already_imported", "dataset": dataset, "issues": []}
 
             _ensure_default_categories(uow)
@@ -295,62 +226,14 @@ class ImportService:
             acc_by_label = {a.label: a for a in uow.accounts.list_all()}
             emp_by_name = {e.name: e for e in uow.employers.list_all()}
             cat_by_name = {c.name: c for c in uow.expense_categories.list_all()}
-            loan_by_name = {l.name: l for l in uow.loans.list_all()}
-
-            def ensure_account(label: str) -> Account:
-                lbl = (label or "").strip() or "DEFAULT"
-                if lbl in acc_by_label:
-                    return acc_by_label[lbl]
-                obj = Account(
-                    account_name=lbl,
-                    label=lbl,
-                    bank_name=None,
-                    iban=None,
-                    role_income=True,
-                    role_debit=True,
-                    role_savings=False,
-                    opening_balance=Decimal("0"),
-                    is_active=True,
-                )
-                uow.accounts.add(obj)
-                uow.flush()
-                acc_by_label[lbl] = obj
-                return obj
 
             def ensure_employer(name: str) -> Employer:
                 nm = (name or "").strip() or "Arbeitgeber"
                 if nm in emp_by_name:
                     return emp_by_name[nm]
-                obj = Employer(name=nm, default_bucket=PayBucket.NETTO)
-                uow.employers.add(obj)
-                uow.flush()
+                obj = Employer(name=nm, payout_timing=PayoutTiming.MID)
+                uow.employers.upsert(obj)
                 emp_by_name[nm] = obj
-                return obj
-
-            def ensure_category(name: str, group: ExpenseGroup) -> ExpenseCategory:
-                nm = (name or "").strip()
-                if not nm:
-                    nm = "Allgemein (Fix)" if group == ExpenseGroup.FIX else "Allgemein (Variabel)"
-                if nm in cat_by_name:
-                    return cat_by_name[nm]
-                obj = ExpenseCategory(name=nm, group=group)
-                uow.expense_categories.add(obj)
-                uow.flush()
-                cat_by_name[nm] = obj
-                return obj
-
-            def ensure_loan(name: str) -> Loan:
-                nm = (name or "").strip() or "Kredit"
-                if nm in loan_by_name:
-                    return loan_by_name[nm]
-                obj = Loan(
-                    name=nm,
-                    principal=Decimal("0"),
-                    status=LoanStatus.ACTIVE,
-                )
-                uow.loans.add(obj)
-                uow.flush()
-                loan_by_name[nm] = obj
                 return obj
 
             def find_pay_rule(
@@ -408,24 +291,18 @@ class ImportService:
                         account_name = _norm(_get(r, "account_name", "kontoname")) or label
                         bank_name = _norm(_get(r, "bank_name", "bank")) or None
                         iban = _norm(_get(r, "iban")) or None
-                        opening_balance = parse_decimal(
-                            _get(r, "opening_balance", "startsaldo"), default=Decimal("0")
-                        )
-                        is_active = parse_bool(_get(r, "is_active", "aktiv"), default=True)
                         role_income = parse_bool(_get(r, "role_income", "rolle_einnahmen"), default=True)
                         role_debit = parse_bool(_get(r, "role_debit", "rolle_ausgaben"), default=True)
-                        role_savings = parse_bool(_get(r, "role_savings", "rolle_sparen"), default=False)
+                        notes = _norm(_get(r, "notes", "notiz")) or None
 
                         existing = acc_by_label.get(label)
                         if existing:
                             existing.account_name = account_name
                             existing.bank_name = bank_name
                             existing.iban = iban
-                            existing.opening_balance = opening_balance
-                            existing.is_active = is_active
                             existing.role_income = role_income
                             existing.role_debit = role_debit
-                            existing.role_savings = role_savings
+                            existing.notes = notes
                             updated += 1
                         else:
                             obj = Account(
@@ -435,12 +312,9 @@ class ImportService:
                                 iban=iban,
                                 role_income=role_income,
                                 role_debit=role_debit,
-                                role_savings=role_savings,
-                                opening_balance=opening_balance,
-                                is_active=is_active,
+                                notes=notes,
                             )
-                            uow.accounts.add(obj)
-                            uow.flush()
+                            uow.accounts.upsert(obj)
                             acc_by_label[label] = obj
                             inserted += 1
 
@@ -453,16 +327,15 @@ class ImportService:
                             skipped += 1
                             continue
 
-                        bucket = _pay_bucket_from_any(_get(r, "default_bucket", "bucket", "standard_bucket") or "none")
+                        payout_timing = _payout_timing_from_any(_get(r, "payout_timing", "auszahlung") or "mid")
 
                         existing = emp_by_name.get(name)
                         if existing:
-                            existing.default_bucket = bucket
+                            existing.payout_timing = payout_timing
                             updated += 1
                         else:
-                            obj = Employer(name=name, default_bucket=bucket)
-                            uow.employers.add(obj)
-                            uow.flush()
+                            obj = Employer(name=name, payout_timing=payout_timing)
+                            uow.employers.upsert(obj)
                             emp_by_name[name] = obj
                             inserted += 1
 
@@ -485,23 +358,20 @@ class ImportService:
                         rule_type = _rule_type_from_any(_get(r, "rule_type", "regeltyp", "typ"))
                         unit = _unit_from_any(_get(r, "unit", "einheit"))
                         value = parse_decimal(_get(r, "value", "wert"), default=Decimal("0"))
-                        bucket = _pay_bucket_from_any(_get(r, "bucket", "pay_bucket") or "none")
                         notes = _norm(_get(r, "notes", "notiz")) or None
 
                         existing = find_pay_rule(emp.id, rule_type, unit, notes)
                         if existing:
                             existing.value = value
-                            existing.bucket = bucket
                             existing.notes = notes
                             updated += 1
                         else:
-                            uow.pay_rules.add(
+                            uow.pay_rules.upsert(
                                 PayRule(
                                     employer_id=emp.id,
                                     rule_type=rule_type,
                                     unit=unit,
                                     value=value,
-                                    bucket=bucket,
                                     notes=notes,
                                 )
                             )
@@ -523,211 +393,9 @@ class ImportService:
                             updated += 1
                         else:
                             obj = ExpenseCategory(name=name, group=group)
-                            uow.expense_categories.add(obj)
-                            uow.flush()
+                            uow.expense_categories.upsert(obj)
                             cat_by_name[name] = obj
                             inserted += 1
-
-                    elif dataset == "income_fixed":
-                        name = _norm(_get(r, "name", "titel"))
-                        if not name:
-                            issues.append(
-                                ImportIssue(dataset, row_idx, "name", "", "Required field missing – row skipped.")
-                            )
-                            skipped += 1
-                            continue
-
-                        employer_name = _norm(_get(r, "employer", "arbeitgeber")) or ""
-                        employer = ensure_employer(employer_name) if employer_name else None
-
-                        amount = parse_decimal(_get(r, "amount", "betrag"), default=Decimal("0"))
-                        payout_timing = _payout_timing_from_any(_get(r, "payout_timing", "auszahlung") or "mid")
-                        is_active = parse_bool(_get(r, "is_active", "aktiv"), default=True)
-
-                        existing = uow.income_fixed.get_by_name(name)
-                        if existing:
-                            existing.amount = amount
-                            existing.payout_timing = payout_timing
-                            existing.is_active = is_active
-                            existing.employer_id = employer.id if employer else None
-                            updated += 1
-                        else:
-                            uow.income_fixed.add(
-                                IncomeFixed(
-                                    name=name,
-                                    amount=amount,
-                                    payout_timing=payout_timing,
-                                    is_active=is_active,
-                                    employer_id=employer.id if employer else None,
-                                )
-                            )
-                            inserted += 1
-
-                    elif dataset == "income_hourly":
-                        name = _norm(_get(r, "name", "titel"))
-                        if not name:
-                            issues.append(
-                                ImportIssue(dataset, row_idx, "name", "", "Required field missing – row skipped.")
-                            )
-                            skipped += 1
-                            continue
-
-                        employer_name = _norm(_get(r, "employer", "arbeitgeber")) or ""
-                        employer = ensure_employer(employer_name) if employer_name else None
-
-                        base_rate = parse_decimal(_get(r, "base_rate", "stundenlohn"), default=Decimal("0"))
-                        payout_timing = _payout_timing_from_any(_get(r, "payout_timing", "auszahlung") or "mid")
-                        is_active = parse_bool(_get(r, "is_active", "aktiv"), default=True)
-
-                        existing = uow.income_hourly.get_by_name(name)
-                        if existing:
-                            existing.base_rate = base_rate
-                            existing.payout_timing = payout_timing
-                            existing.is_active = is_active
-                            existing.employer_id = employer.id if employer else None
-                            updated += 1
-                        else:
-                            uow.income_hourly.add(
-                                IncomeHourly(
-                                    name=name,
-                                    base_rate=base_rate,
-                                    payout_timing=payout_timing,
-                                    is_active=is_active,
-                                    employer_id=employer.id if employer else None,
-                                )
-                            )
-                            inserted += 1
-
-                    elif dataset == "expense_recurring":
-                        name = _norm(_get(r, "name", "titel"))
-                        if not name:
-                            issues.append(
-                                ImportIssue(dataset, row_idx, "name", "", "Required field missing – row skipped.")
-                            )
-                            skipped += 1
-                            continue
-
-                        group_name = _norm(_get(r, "group", "kategorie", "gruppe"))
-                        group = ensure_category(group_name, ExpenseGroup.FIX)
-
-                        amount = parse_decimal(_get(r, "amount", "betrag"), default=Decimal("0"))
-                        payment_timing = _payment_timing_from_any(_get(r, "payment_timing", "zahlung") or "mid")
-                        status = _recurring_status_from_any(_get(r, "status", "status_text") or "aktiv")
-                        notes = _norm(_get(r, "notes", "notiz")) or None
-
-                        existing = uow.expense_recurring.get_by_name(name)
-                        if existing:
-                            existing.amount = amount
-                            existing.payment_timing = payment_timing
-                            existing.status = status
-                            existing.group_id = group.id
-                            existing.notes = notes
-                            updated += 1
-                        else:
-                            uow.expense_recurring.add(
-                                ExpenseRecurring(
-                                    name=name,
-                                    group_id=group.id,
-                                    amount=amount,
-                                    payment_timing=payment_timing,
-                                    status=status,
-                                    notes=notes,
-                                )
-                            )
-                            inserted += 1
-
-                    elif dataset == "expense_variable":
-                        name = _norm(_get(r, "name", "titel"))
-                        if not name:
-                            issues.append(
-                                ImportIssue(dataset, row_idx, "name", "", "Required field missing – row skipped.")
-                            )
-                            skipped += 1
-                            continue
-
-                        group_name = _norm(_get(r, "group", "kategorie", "gruppe"))
-                        group = ensure_category(group_name, ExpenseGroup.VARIABLE)
-
-                        amount = parse_decimal(_get(r, "amount", "betrag"), default=Decimal("0"))
-                        status = _variable_status_from_any(_get(r, "status", "status_text") or "offen")
-                        month = parse_month(_get(r, "month", "monat"))
-                        if not month:
-                            issues.append(
-                                ImportIssue(dataset, row_idx, "month", "", "Required field missing – row skipped.")
-                            )
-                            skipped += 1
-                            continue
-
-                        existing = uow.expense_variable.get_by_name_month(name, month)
-                        if existing:
-                            existing.amount = amount
-                            existing.status = status
-                            existing.group_id = group.id
-                            updated += 1
-                        else:
-                            uow.expense_variable.add(
-                                ExpenseVariable(
-                                    name=name,
-                                    group_id=group.id,
-                                    amount=amount,
-                                    status=status,
-                                    month=month,
-                                )
-                            )
-                            inserted += 1
-
-                    elif dataset == "loans":
-                        name = _norm(_get(r, "name", "titel"))
-                        if not name:
-                            issues.append(
-                                ImportIssue(dataset, row_idx, "name", "", "Required field missing – row skipped.")
-                            )
-                            skipped += 1
-                            continue
-
-                        principal = parse_decimal(_get(r, "principal", "betrag"), default=Decimal("0"))
-                        status = _loan_status_from_any(_get(r, "status") or "aktiv")
-                        notes = _norm(_get(r, "notes", "notiz")) or None
-
-                        existing = uow.loans.get_by_name(name)
-                        if existing:
-                            existing.principal = principal
-                            existing.status = status
-                            existing.notes = notes
-                            updated += 1
-                        else:
-                            uow.loans.add(Loan(name=name, principal=principal, status=status, notes=notes))
-                            inserted += 1
-
-                    elif dataset == "loan_events":
-                        loan_name = _norm(_get(r, "loan", "kredit"))
-                        if not loan_name:
-                            issues.append(
-                                ImportIssue(dataset, row_idx, "loan", "", "Required field missing – row skipped.")
-                            )
-                            skipped += 1
-                            continue
-                        loan = loan_by_name.get(loan_name) or ensure_loan(loan_name)
-
-                        event_type = _event_type_from_any(_get(r, "event_type", "typ") or "zahlung")
-                        amount = parse_decimal(_get(r, "amount", "betrag"), default=Decimal("0"))
-                        when = parse_date(_get(r, "date", "datum"))
-                        if not when:
-                            issues.append(
-                                ImportIssue(dataset, row_idx, "date", "", "Required field missing – row skipped.")
-                            )
-                            skipped += 1
-                            continue
-
-                        uow.loan_events.add(
-                            LoanEvent(
-                                loan_id=loan.id,
-                                event_type=event_type,
-                                amount=amount,
-                                date=when,
-                            )
-                        )
-                        inserted += 1
 
                     else:
                         raise ValueError(f"Nicht implementiert: {dataset}")
@@ -738,12 +406,11 @@ class ImportService:
 
             uow.import_runs.add(
                 ImportRun(
-                    file_path=str(p),
+                    filename=str(p.name),
                     file_hash=h,
-                    imported_at=datetime.now(),
+                    imported_at=datetime.utcnow(),
                 )
             )
-            uow.commit()
 
         return {
             "status": "ok",
@@ -768,20 +435,14 @@ class ImportService:
                 "bank_name",
                 "bank",
                 "iban",
-                "opening_balance",
-                "startsaldo",
-                "is_active",
-                "aktiv",
                 "role_income",
                 "rolle_einnahmen",
                 "role_debit",
                 "rolle_ausgaben",
-                "role_savings",
-                "rolle_sparen",
             }
 
         if dataset == "employers":
-            return base | {"default_bucket", "bucket", "standard_bucket", "arbeitgeber"}
+            return base | {"payout_timing", "auszahlung", "arbeitgeber"}
 
         if dataset == "pay_rules":
             return base | {
@@ -795,38 +456,9 @@ class ImportService:
                 "einheit",
                 "value",
                 "wert",
-                "bucket",
-                "pay_bucket",
             }
 
         if dataset == "categories":
             return base | {"group", "gruppe", "kategorie"}
-
-        if dataset == "income_fixed":
-            return base | {"employer", "arbeitgeber", "amount", "betrag", "payout_timing", "auszahlung", "is_active", "aktiv"}
-
-        if dataset == "income_hourly":
-            return base | {
-                "employer",
-                "arbeitgeber",
-                "base_rate",
-                "stundenlohn",
-                "payout_timing",
-                "auszahlung",
-                "is_active",
-                "aktiv",
-            }
-
-        if dataset == "expense_recurring":
-            return base | {"group", "kategorie", "gruppe", "amount", "betrag", "payment_timing", "zahlung", "status", "status_text"}
-
-        if dataset == "expense_variable":
-            return base | {"group", "kategorie", "gruppe", "amount", "betrag", "status", "status_text", "month", "monat"}
-
-        if dataset == "loans":
-            return base | {"principal", "betrag", "status"}
-
-        if dataset == "loan_events":
-            return base | {"loan", "kredit", "event_type", "typ", "amount", "betrag", "date", "datum"}
 
         return base
