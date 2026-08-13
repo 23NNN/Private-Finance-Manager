@@ -61,7 +61,7 @@ def ensure_schema() -> list[str]:
         # ---- i18n: app_setting + i18n_string ----
         if "app_setting" not in tables or "i18n_string" not in tables:
             try:
-                from src.infrastructure.db.orm_models import Base, AppSetting, I18nString  # noqa: F401
+                from src.infrastructure.db.orm_models import AppSetting, Base, I18nString  # noqa: F401
 
                 Base.metadata.create_all(engine, tables=[AppSetting.__table__, I18nString.__table__])
                 tables = set(insp.get_table_names())
@@ -72,6 +72,7 @@ def ensure_schema() -> list[str]:
         if "app_setting" in tables and "i18n_string" in tables:
             try:
                 from sqlalchemy import select
+
                 from src.infrastructure.db.orm_models import AppSetting, I18nString
 
                 # default language

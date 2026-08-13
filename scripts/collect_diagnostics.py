@@ -15,13 +15,11 @@ from __future__ import annotations
 
 import argparse
 import datetime as _dt
-import os
 import re
 import subprocess
 import sys
 from pathlib import Path
 from typing import Iterable, Tuple
-
 
 _WIN_ABS_PATH = re.compile(r"(?i)\b[a-z]:\\[^\s\"\'\)\]]+")
 _POSIX_ABS_PATH = re.compile(r"(?<![\w/])/(?:[^ \n\r\t\"\'\)\]]+)")  # best-effort

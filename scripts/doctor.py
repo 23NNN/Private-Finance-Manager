@@ -19,11 +19,11 @@ from __future__ import annotations
 import argparse
 import builtins
 import dis
-import re
 import importlib
 import inspect
 import os
 import platform
+import re
 import sqlite3
 import sys
 from dataclasses import dataclass

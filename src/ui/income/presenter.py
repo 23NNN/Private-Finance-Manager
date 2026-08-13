@@ -6,9 +6,6 @@ import tkinter as tk
 import traceback
 from datetime import date
 from decimal import Decimal
-
-from src.domain.models.period import Period
-
 from tkinter import messagebox
 
 from src.application.dto.employers import EmployerDTO, PayRuleDTO
@@ -18,12 +15,13 @@ from src.application.services.employer_service import EmployerService
 from src.application.services.income_service import IncomeService
 from src.application.services.reference_data_service import ReferenceDataService
 from src.application.validators.parsers import parse_date
+from src.domain.models.period import Period
+from src.infrastructure.db.orm_models import PayRuleType
 from src.ui.common.dialogs import FieldSpec, FormDialog
+from src.ui.common.i18n import tr, trf
 from src.ui.common.validation import ui_decimal
 from src.ui.income.fixed_dialog import FixedIncomeDialog
 from src.ui.income.hourly_dialog import HourlyIncomeDialog
-from src.ui.common.i18n import tr, trf
-from src.infrastructure.db.orm_models import PayRuleType
 
 UI_RULE_TYPES: list[str] = [e.value for e in PayRuleType]
 

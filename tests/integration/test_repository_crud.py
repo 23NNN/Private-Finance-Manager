@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 from pathlib import Path
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from src.infrastructure.db.orm_models import Base, Account
+from src.infrastructure.db.orm_models import Account, Base
 from src.infrastructure.repositories.accounts import AccountRepository
 
 

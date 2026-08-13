@@ -22,7 +22,7 @@ Eigenschaften:
 Beispiele:
 - Dry-Run:  python scripts/finalize_hourly_legacy_cleanup.py
 - Apply:    python scripts/finalize_hourly_legacy_cleanup.py --apply
-- Anderer DB-Pfad: python scripts/finalize_hourly_legacy_cleanup.py --db .\demo_data\finanzmanager.sqlite --apply
+- Anderer DB-Pfad: python scripts/finalize_hourly_legacy_cleanup.py --db .\\demo_data\finanzmanager.sqlite --apply
 """
 
 import argparse

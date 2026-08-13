@@ -5,8 +5,8 @@ import tkinter as tk
 from tkinter import ttk
 
 from src.ui.common.controls import create_treeview_with_scrollbars
-from src.ui.common.period_selector import PeriodSelector
 from src.ui.common.i18n import tr, trf
+from src.ui.common.period_selector import PeriodSelector
 
 VIEW_MODES = ("CASHFLOW", "BUDGET_MONTH", "BUDGET_QUARTER")
 TIMEFRAMES = ("MONTH", "YEAR")

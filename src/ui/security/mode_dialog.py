@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import tkinter as tk
-from src.ui.common.i18n import tr
 from tkinter import ttk
+
+from src.ui.common.i18n import tr
 
 
 class SecurityModeDialog(tk.Toplevel):

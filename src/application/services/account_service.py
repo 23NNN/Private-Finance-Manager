@@ -10,10 +10,10 @@ from src.application.dto.accounts import AccountDTO
 from src.infrastructure.db.orm_models import (
     Account,
     Employer,
-    IncomeFixed,
-    IncomeHourly,
     ExpenseRecurring,
     ExpenseVariable,
+    IncomeFixed,
+    IncomeHourly,
     Loan,
     SavingsContribution,
 )

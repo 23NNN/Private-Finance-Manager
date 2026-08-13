@@ -3,10 +3,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from src.config.settings import get_settings
-from src.infrastructure.db.engine import dispose_engine, init_engine
-from src.security.bootstrap import bootstrap_security_and_db
+from src.infrastructure.db.engine import dispose_engine
 from src.security.manager import SecurityManager
-from src.security.security_config import load_security_config, save_security_config, SecurityConfig
+from src.security.security_config import SecurityConfig, load_security_config, save_security_config
 
 
 @dataclass(frozen=True)

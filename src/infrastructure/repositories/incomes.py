@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from sqlalchemy import select
+
 from src.infrastructure.db.orm_models import IncomeFixed, IncomeHourly
 from src.infrastructure.repositories.base import Repository
 

@@ -5,8 +5,7 @@ import tkinter as tk
 from datetime import date
 from decimal import Decimal, InvalidOperation
 from tkinter import ttk
-from typing import Any, Callable
-
+from typing import Any
 
 _ARROW_UP = "▲"
 _ARROW_DOWN = "▼"

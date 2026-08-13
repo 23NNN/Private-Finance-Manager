@@ -26,11 +26,11 @@ from src.infrastructure.db.orm_models import (
     LoanEventType,
     LoanStatus,
     PayBucket,
+    PaymentTiming,
+    PayoutTiming,
     PayRule,
     PayRuleType,
     PayRuleUnit,
-    PaymentTiming,
-    PayoutTiming,
     RecurringStatus,
     VariableStatus,
 )

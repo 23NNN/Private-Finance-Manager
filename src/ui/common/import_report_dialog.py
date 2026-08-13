@@ -2,11 +2,10 @@
 from __future__ import annotations
 
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import messagebox, ttk
 
 from src.ui.common.controls import create_treeview_with_scrollbars
 from src.ui.common.i18n import tr, trf
-
 
 _DATASET_KEY_MAP: dict[str, str] = {
     "accounts": "io.dataset.accounts",

@@ -13,7 +13,6 @@ from src.application.dto.employers import PayRuleDTO
 from src.application.services.employer_service import EmployerService
 from src.infrastructure.db.orm_models import Base, Employer, PayoutTiming, PayRule, PayRuleType, PayRuleUnit
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
