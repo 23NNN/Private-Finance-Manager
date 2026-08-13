@@ -165,7 +165,9 @@ without `.git`, `.venv`, `dist/`, `build`.
 ### Change CSV/Excel import behavior
 → Excel: `src/application/importers/excel_importer.py` (covers all datasets)
 → CSV: `src/application/services/import_service.py` (`import_csv()` parses via `infrastructure/io/csv_reader.py` directly — `importers/csv_importer.py` is an unused, orphaned module, not the actual CSV path)
-→ CSV only supports `ImportService.CSV_DATASETS` minus `_UNSUPPORTED_CSV_DATASETS` (schema-incompatible datasets are rejected with a clear error rather than guessing a column mapping)
+→ CSV supports all `ImportService.CSV_DATASETS` (all 10 types, since v1.3.0). The accepted column
+  format for each dataset is `ExportService.SCHEMAS[dataset]["fields"]` — CSV export and
+  `import_csv()` are a round trip, so when adding a field check both sides stay in sync.
 → `src/ui/common/import_export_dialog.py`
 
 ### Change security / encryption behavior
