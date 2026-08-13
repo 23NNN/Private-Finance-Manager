@@ -48,7 +48,7 @@ def _table_columns(con: sqlite3.Connection, table: str) -> set[str]:
 def _get_default_db_path() -> Path:
     root = _repo_root()
     _ensure_syspath(root)
-    from src.config.settings import get_settings  # noqa: WPS433
+    from src.config.settings import get_settings
 
     return get_settings().db_path()
 
