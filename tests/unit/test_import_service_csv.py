@@ -10,6 +10,7 @@ types still compatible with the schema (accounts, employers, pay_rules,
 categories); the other 6 are now explicitly rejected instead of silently
 crashing or corrupting data.
 """
+
 from __future__ import annotations
 
 from decimal import Decimal
@@ -17,7 +18,9 @@ from pathlib import Path
 
 import pytest
 
+from src.application.services.export_service import ExportService
 from src.application.services.import_service import ImportService
+from src.domain.models.period import Period
 from src.infrastructure.db.engine import dispose_engine, get_engine, init_engine
 from src.infrastructure.db.orm_models import Base, PayoutTiming
 from src.infrastructure.unit_of_work import UnitOfWork
@@ -42,7 +45,8 @@ def test_import_accounts_creates_and_then_updates(tmp_path: Path):
     svc = ImportService()
 
     path = _write_csv(
-        tmp_path, "accounts.csv",
+        tmp_path,
+        "accounts.csv",
         ["label", "account_name", "bank_name", "role_income", "role_debit"],
         [["GIRO", "Girokonto", "Sparkasse", "true", "true"]],
     )
@@ -57,7 +61,8 @@ def test_import_accounts_creates_and_then_updates(tmp_path: Path):
         assert acc.bank_name == "Sparkasse"
 
     path2 = _write_csv(
-        tmp_path, "accounts2.csv",
+        tmp_path,
+        "accounts2.csv",
         ["label", "account_name", "bank_name", "role_income", "role_debit"],
         [["GIRO", "Girokonto", "Neue Bank", "true", "false"]],
     )
@@ -96,7 +101,8 @@ def test_import_pay_rules_auto_creates_employer(tmp_path: Path):
     svc = ImportService()
 
     path = _write_csv(
-        tmp_path, "pay_rules.csv",
+        tmp_path,
+        "pay_rules.csv",
         ["employer", "rule_type", "unit", "value"],
         [["NewCo", "HOURLY_WAGE", "EUR_PER_HOUR", "20.00"]],
     )
@@ -136,13 +142,496 @@ def test_import_csv_skips_already_imported_file(tmp_path: Path):
     assert second["reason"] == "already_imported"
 
 
-@pytest.mark.parametrize(
-    "dataset",
-    ["income_fixed", "income_hourly", "expense_recurring", "expense_variable", "loans", "loan_events"],
-)
-def test_import_csv_rejects_unsupported_datasets(tmp_path: Path, dataset: str):
+def test_import_income_fixed_creates_and_then_updates(tmp_path: Path):
     svc = ImportService()
-    path = _write_csv(tmp_path, "data.csv", ["name"], [["whatever"]])
 
-    with pytest.raises(ValueError, match="nicht unterstützt"):
-        svc.import_csv(path, dataset)
+    path = _write_csv(
+        tmp_path,
+        "income_fixed.csv",
+        ["employer_name", "year", "month", "base_amount", "special_amount", "actual_amount", "payout_timing"],
+        [["Firma Beispiel", "2026", "3", "3000.00", "0.00", "0.00", "MID"]],
+    )
+    result = svc.import_csv(path, "income_fixed")
+    assert result["status"] == "ok"
+    assert result["inserted"] == 1
+    assert result["updated"] == 0
+
+    with UnitOfWork() as uow:
+        emp = uow.employers.get_by_name("Firma Beispiel")
+        assert emp is not None
+        row = uow.income_fixed.get_by_emp_period(emp.id, 2026, 3)
+        assert row is not None
+        assert row.base_amount == Decimal("3000.00")
+        assert row.calc_amount == Decimal("3000.00")
+        assert row.payout_timing == PayoutTiming.MID
+
+    path2 = _write_csv(
+        tmp_path,
+        "income_fixed2.csv",
+        ["employer_name", "year", "month", "base_amount", "special_amount", "actual_amount", "payout_timing"],
+        [["Firma Beispiel", "2026", "3", "3200.00", "100.00", "3300.00", "BEGINNING"]],
+    )
+    result2 = svc.import_csv(path2, "income_fixed")
+    assert result2["inserted"] == 0
+    assert result2["updated"] == 1
+
+    with UnitOfWork() as uow:
+        emp = uow.employers.get_by_name("Firma Beispiel")
+        row = uow.income_fixed.get_by_emp_period(emp.id, 2026, 3)
+        assert row.base_amount == Decimal("3200.00")
+        assert row.calc_amount == Decimal("3300.00")
+        assert row.payout_timing == PayoutTiming.BEGINNING
+
+
+def test_import_income_fixed_round_trips_with_export(tmp_path: Path):
+    svc = ImportService()
+
+    path = _write_csv(
+        tmp_path,
+        "income_fixed.csv",
+        [
+            "employer_name",
+            "year",
+            "month",
+            "base_amount",
+            "special_amount",
+            "actual_amount",
+            "payout_timing",
+            "account_label",
+        ],
+        [["RoundTrip Co", "2026", "5", "2500.00", "50.00", "2550.00", "BEGINNING", "GIRO"]],
+    )
+    svc.import_csv(path, "income_fixed")
+
+    export_path = str(tmp_path / "income_fixed_export.csv")
+    ExportService().export_csv(export_path, "income_fixed", period=Period(2026, 5))
+
+    result = svc.import_csv(export_path, "income_fixed")
+    assert result["status"] == "ok"
+    assert result["inserted"] == 0
+    assert result["updated"] == 1
+
+    with UnitOfWork() as uow:
+        emp = uow.employers.get_by_name("RoundTrip Co")
+        row = uow.income_fixed.get_by_emp_period(emp.id, 2026, 5)
+        assert row.base_amount == Decimal("2500.00")
+        assert row.special_amount == Decimal("50.00")
+        assert row.actual_amount == Decimal("2550.00")
+        assert row.payout_timing == PayoutTiming.BEGINNING
+        acc = uow.accounts.get(row.account_id)
+        assert acc.label == "GIRO"
+
+
+def test_import_income_hourly_creates_and_then_updates(tmp_path: Path):
+    svc = ImportService()
+
+    path = _write_csv(
+        tmp_path,
+        "income_hourly.csv",
+        ["employer_name", "year", "month", "hours_normal", "night", "sunday", "holiday", "overtime"],
+        [["Firma Beispiel", "2026", "4", "160", "10", "0", "0", "5"]],
+    )
+    result = svc.import_csv(path, "income_hourly")
+    assert result["status"] == "ok"
+    assert result["inserted"] == 1
+    assert result["updated"] == 0
+
+    with UnitOfWork() as uow:
+        emp = uow.employers.get_by_name("Firma Beispiel")
+        assert emp is not None
+        row = uow.income_hourly.get_by_emp_period(emp.id, 2026, 4)
+        assert row is not None
+        assert row.hours_normal == Decimal("160")
+        assert row.night == Decimal("10")
+        assert row.overtime == Decimal("5")
+        assert row.calc_amount == Decimal("0.00")
+
+    path2 = _write_csv(
+        tmp_path,
+        "income_hourly2.csv",
+        ["employer_name", "year", "month", "hours_normal", "night", "sunday", "holiday", "overtime"],
+        [["Firma Beispiel", "2026", "4", "170", "12", "0", "0", "8"]],
+    )
+    result2 = svc.import_csv(path2, "income_hourly")
+    assert result2["inserted"] == 0
+    assert result2["updated"] == 1
+
+    with UnitOfWork() as uow:
+        emp = uow.employers.get_by_name("Firma Beispiel")
+        row = uow.income_hourly.get_by_emp_period(emp.id, 2026, 4)
+        assert row.hours_normal == Decimal("170")
+        assert row.overtime == Decimal("8")
+
+
+def test_import_income_hourly_round_trips_with_export(tmp_path: Path):
+    svc = ImportService()
+
+    path = _write_csv(
+        tmp_path,
+        "income_hourly.csv",
+        [
+            "employer_name",
+            "year",
+            "month",
+            "hours_normal",
+            "night",
+            "sunday",
+            "holiday",
+            "overtime",
+            "payout_timing",
+            "account_label",
+        ],
+        [["RoundTrip Co", "2026", "6", "150", "5", "2", "1", "3", "BEGINNING", "GIRO"]],
+    )
+    svc.import_csv(path, "income_hourly")
+
+    export_path = str(tmp_path / "income_hourly_export.csv")
+    ExportService().export_csv(export_path, "income_hourly", period=Period(2026, 6))
+
+    result = svc.import_csv(export_path, "income_hourly")
+    assert result["status"] == "ok"
+    assert result["inserted"] == 0
+    assert result["updated"] == 1
+
+    with UnitOfWork() as uow:
+        emp = uow.employers.get_by_name("RoundTrip Co")
+        row = uow.income_hourly.get_by_emp_period(emp.id, 2026, 6)
+        assert row.hours_normal == Decimal("150")
+        assert row.night == Decimal("5")
+        assert row.sunday == Decimal("2")
+        assert row.holiday == Decimal("1")
+        assert row.overtime == Decimal("3")
+        assert row.payout_timing == PayoutTiming.BEGINNING
+        acc = uow.accounts.get(row.account_id)
+        assert acc.label == "GIRO"
+
+
+def test_import_expense_recurring_always_inserts(tmp_path: Path):
+    svc = ImportService()
+
+    path = _write_csv(
+        tmp_path,
+        "expense_recurring.csv",
+        ["name", "category_name", "amount", "frequency_months", "due_day", "status", "pay_bucket"],
+        [["Netflix", "Abos", "12.99", "1", "5", "ACTIVE", "NONE"]],
+    )
+    result = svc.import_csv(path, "expense_recurring")
+    assert result["status"] == "ok"
+    assert result["inserted"] == 1
+
+    with UnitOfWork() as uow:
+        rows = uow.expense_recurring.list_all()
+        assert len(rows) == 1
+        row = rows[0]
+        assert row.name == "Netflix"
+        assert row.amount == Decimal("12.99")
+        assert row.frequency_months == 1
+        assert row.due_day == 5
+        assert row.status.value == "ACTIVE"
+        assert row.account is not None  # required FK, auto-created via DEFAULT fallback
+        assert row.category.name == "Abos"
+
+    # No natural key for this dataset (matches excel_importer.py) -- a second
+    # import of equivalent content always inserts a new row, it never updates.
+    path2 = _write_csv(
+        tmp_path,
+        "expense_recurring2.csv",
+        ["name", "category_name", "amount", "frequency_months", "due_day", "status", "pay_bucket"],
+        [["Netflix", "Abos", "13.99", "1", "5", "ACTIVE", "NONE"]],
+    )
+    result2 = svc.import_csv(path2, "expense_recurring")
+    assert result2["inserted"] == 1
+    assert result2["updated"] == 0
+
+    with UnitOfWork() as uow:
+        rows = uow.expense_recurring.list_all()
+        assert len(rows) == 2
+
+
+def test_import_expense_recurring_round_trips_with_export(tmp_path: Path):
+    svc = ImportService()
+
+    path = _write_csv(
+        tmp_path,
+        "expense_recurring.csv",
+        [
+            "name",
+            "category_name",
+            "amount",
+            "frequency_months",
+            "due_day",
+            "anchor_month",
+            "status",
+            "account_label",
+            "pay_bucket",
+            "allocation_override",
+        ],
+        [["Miete", "Wohnen", "850.00", "1", "1", "", "ACTIVE", "GIRO", "MID", "CASHFLOW"]],
+    )
+    svc.import_csv(path, "expense_recurring")
+
+    export_path = str(tmp_path / "expense_recurring_export.csv")
+    ExportService().export_csv(export_path, "expense_recurring")
+
+    result = svc.import_csv(export_path, "expense_recurring")
+    assert result["status"] == "ok"
+    assert result["inserted"] == 1
+
+    with UnitOfWork() as uow:
+        rows = [r for r in uow.expense_recurring.list_all() if r.name == "Miete"]
+        assert len(rows) == 2
+        row = rows[0]
+        assert row.amount == Decimal("850.00")
+        assert row.pay_bucket.value == "MID"
+        assert row.allocation_override.value == "CASHFLOW"
+        assert row.account.label == "GIRO"
+
+
+def test_import_expense_variable_always_inserts(tmp_path: Path):
+    svc = ImportService()
+
+    path = _write_csv(
+        tmp_path,
+        "expense_variable.csv",
+        ["name", "category_name", "amount", "year", "month", "status"],
+        [["Lebensmittel", "Haushalt", "250.00", "2026", "7", "bezahlt"]],
+    )
+    result = svc.import_csv(path, "expense_variable")
+    assert result["status"] == "ok"
+    assert result["inserted"] == 1
+
+    with UnitOfWork() as uow:
+        rows = uow.expense_variable.list_for_period(2026, 7)
+        assert len(rows) == 1
+        row = rows[0]
+        assert row.name == "Lebensmittel"
+        assert row.amount == Decimal("250.00")
+        assert row.status.value == "PAID"
+        assert row.account_id is None  # optional FK, no label given -> no auto-create
+        assert row.category.name == "Haushalt"
+
+    # No natural key for this dataset -- a second equivalent import always
+    # inserts a new row, never updates (matches expense_recurring/excel_importer.py).
+    result2 = svc.import_csv(
+        _write_csv(
+            tmp_path,
+            "expense_variable2.csv",
+            ["name", "category_name", "amount", "year", "month", "status"],
+            [["Lebensmittel", "Haushalt", "260.00", "2026", "7", "offen"]],
+        ),
+        "expense_variable",
+    )
+    assert result2["inserted"] == 1
+    with UnitOfWork() as uow:
+        assert len(uow.expense_variable.list_for_period(2026, 7)) == 2
+
+
+def test_import_expense_variable_round_trips_with_export(tmp_path: Path):
+    svc = ImportService()
+
+    path = _write_csv(
+        tmp_path,
+        "expense_variable.csv",
+        ["name", "category_name", "amount", "year", "month", "status", "account_label", "pay_bucket"],
+        [["Geschenk", "Freizeit", "45.00", "2026", "8", "storniert", "GIRO", "ANFANG"]],
+    )
+    svc.import_csv(path, "expense_variable")
+
+    export_path = str(tmp_path / "expense_variable_export.csv")
+    ExportService().export_csv(export_path, "expense_variable", period=Period(2026, 8))
+
+    result = svc.import_csv(export_path, "expense_variable")
+    assert result["status"] == "ok"
+    assert result["inserted"] == 1
+
+    with UnitOfWork() as uow:
+        rows = [r for r in uow.expense_variable.list_for_period(2026, 8) if r.name == "Geschenk"]
+        assert len(rows) == 2
+        row = rows[0]
+        assert row.amount == Decimal("45.00")
+        assert row.status.value == "CANCELLED"
+        assert row.pay_bucket.value == "BEGINNING"
+        assert row.account.label == "GIRO"
+
+
+def test_import_loans_creates_and_then_updates(tmp_path: Path):
+    svc = ImportService()
+
+    path = _write_csv(
+        tmp_path,
+        "loans.csv",
+        ["name", "start_date", "principal_initial", "annual_interest_rate", "regular_payment", "status"],
+        [["Auto Kredit", "2026-01-01", "15000.00", "3.5000", "250.00", "ACTIVE"]],
+    )
+    result = svc.import_csv(path, "loans")
+    assert result["status"] == "ok"
+    assert result["inserted"] == 1
+    assert result["updated"] == 0
+
+    with UnitOfWork() as uow:
+        loan = uow.loans.get_by_name("Auto Kredit")
+        assert loan is not None
+        assert loan.principal_initial == Decimal("15000.00")
+        assert loan.annual_interest_rate == Decimal("3.5000")
+        assert loan.status.value == "ACTIVE"
+        assert uow.accounts.get(loan.account_id) is not None  # required FK, auto-created via DEFAULT fallback
+
+    path2 = _write_csv(
+        tmp_path,
+        "loans2.csv",
+        ["name", "start_date", "principal_initial", "annual_interest_rate", "regular_payment", "status"],
+        [["Auto Kredit", "2026-01-01", "14000.00", "3.5000", "250.00", "CLOSED"]],
+    )
+    result2 = svc.import_csv(path2, "loans")
+    assert result2["inserted"] == 0
+    assert result2["updated"] == 1
+
+    with UnitOfWork() as uow:
+        loan = uow.loans.get_by_name("Auto Kredit")
+        assert loan.principal_initial == Decimal("14000.00")
+        assert loan.status.value == "CLOSED"
+
+
+def test_import_loans_round_trips_with_export(tmp_path: Path):
+    svc = ImportService()
+
+    path = _write_csv(
+        tmp_path,
+        "loans.csv",
+        [
+            "name",
+            "start_date",
+            "principal_initial",
+            "annual_interest_rate",
+            "regular_payment",
+            "payment_timing",
+            "account_label",
+            "status",
+        ],
+        [["RoundTrip Kredit", "2026-02-01", "8000.00", "2.1000", "150.00", "BEGINNING", "GIRO", "ACTIVE"]],
+    )
+    svc.import_csv(path, "loans")
+
+    export_path = str(tmp_path / "loans_export.csv")
+    ExportService().export_csv(export_path, "loans")
+
+    result = svc.import_csv(export_path, "loans")
+    assert result["status"] == "ok"
+    assert result["inserted"] == 0
+    assert result["updated"] == 1
+
+    with UnitOfWork() as uow:
+        loan = uow.loans.get_by_name("RoundTrip Kredit")
+        assert loan.principal_initial == Decimal("8000.00")
+        assert loan.annual_interest_rate == Decimal("2.1000")
+        assert loan.payment_timing == PayoutTiming.BEGINNING
+        assert uow.accounts.get(loan.account_id).label == "GIRO"
+
+
+def test_import_loan_events_always_inserts(tmp_path: Path):
+    svc = ImportService()
+
+    loans_path = _write_csv(
+        tmp_path,
+        "loans.csv",
+        ["name", "start_date", "principal_initial", "regular_payment"],
+        [["Auto Kredit", "2026-01-01", "15000.00", "250.00"]],
+    )
+    svc.import_csv(loans_path, "loans")
+
+    path = _write_csv(
+        tmp_path,
+        "loan_events.csv",
+        ["loan_name", "event_date", "year", "month", "event_type", "amount"],
+        [["Auto Kredit", "2026-01-15", "2026", "1", "PAYMENT", "250.00"]],
+    )
+    result = svc.import_csv(path, "loan_events")
+    assert result["status"] == "ok"
+    assert result["inserted"] == 1
+    assert result["skipped"] == 0
+
+    with UnitOfWork() as uow:
+        loan = uow.loans.get_by_name("Auto Kredit")
+        events = uow.loan_events.list_by_loan(loan.id)
+        assert len(events) == 1
+        assert events[0].amount == Decimal("250.00")
+        assert events[0].event_type.value == "PAYMENT"
+
+    # No natural key -- a second equivalent import always inserts a new event.
+    result2 = svc.import_csv(
+        _write_csv(
+            tmp_path,
+            "loan_events2.csv",
+            ["loan_name", "event_date", "year", "month", "event_type", "amount"],
+            [["Auto Kredit", "2026-02-15", "2026", "2", "EXTRA_PAYMENT", "500.00"]],
+        ),
+        "loan_events",
+    )
+    assert result2["inserted"] == 1
+    with UnitOfWork() as uow:
+        loan = uow.loans.get_by_name("Auto Kredit")
+        assert len(uow.loan_events.list_by_loan(loan.id)) == 2
+
+
+def test_import_loan_events_skips_row_when_loan_missing(tmp_path: Path):
+    svc = ImportService()
+
+    path = _write_csv(
+        tmp_path,
+        "loan_events.csv",
+        ["loan_name", "event_date", "year", "month", "event_type", "amount"],
+        [["Unbekannter Kredit", "2026-01-15", "2026", "1", "PAYMENT", "250.00"]],
+    )
+    result = svc.import_csv(path, "loan_events")
+    assert result["status"] == "ok"
+    assert result["inserted"] == 0
+    assert result["skipped"] == 1
+    assert any("nicht gefunden" in issue.message for issue in result["issues"])
+
+
+def test_import_loan_events_round_trips_with_export(tmp_path: Path):
+    svc = ImportService()
+
+    svc.import_csv(
+        _write_csv(
+            tmp_path,
+            "loans.csv",
+            ["name", "start_date", "principal_initial", "regular_payment"],
+            [["RoundTrip Kredit", "2026-01-01", "8000.00", "150.00"]],
+        ),
+        "loans",
+    )
+    svc.import_csv(
+        _write_csv(
+            tmp_path,
+            "loan_events.csv",
+            [
+                "loan_name",
+                "event_date",
+                "year",
+                "month",
+                "event_type",
+                "amount",
+                "new_regular_payment",
+                "new_annual_interest_rate",
+            ],
+            [["RoundTrip Kredit", "2026-03-15", "2026", "3", "RATE_CHANGE", "", "160.00", "2.5000"]],
+        ),
+        "loan_events",
+    )
+
+    export_path = str(tmp_path / "loan_events_export.csv")
+    ExportService().export_csv(export_path, "loan_events")
+
+    result = svc.import_csv(export_path, "loan_events")
+    assert result["status"] == "ok"
+    assert result["inserted"] == 1
+
+    with UnitOfWork() as uow:
+        loan = uow.loans.get_by_name("RoundTrip Kredit")
+        events = uow.loan_events.list_by_loan(loan.id)
+        assert len(events) == 2
+        ev = events[0]
+        assert ev.event_type.value == "RATE_CHANGE"
+        assert ev.new_regular_payment == Decimal("160.00")
+        assert ev.new_annual_interest_rate == Decimal("2.5000")

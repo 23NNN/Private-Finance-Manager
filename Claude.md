@@ -72,7 +72,7 @@ Language: Python 3.11 | DB: SQLite + SQLAlchemy 2.x | Optional: SQLCipher (encry
 | **Savings** | *(no dedicated tab)* | *(in overview presenter)* | `services/savings_service.py` | `repositories/savings.py` | `dto/savings.py` · `domain/policies/savings_policy.py` |
 | **Employers / Pay rules** | *(in income dialogs)* | `ui/income/presenter.py` | `services/employer_service.py` | `repositories/employers.py` · `pay_rules.py` | `dto/employers.py` |
 | **Categories** | `ui/common/category_manager.py` | *(inline)* | `services/expense_service.py` | `repositories/expenses.py` | `orm_models.py` |
-| **Import CSV/Excel** | `ui/common/import_export_dialog.py` · `import_report_dialog.py` | *(inline)* | `services/import_service.py` | `repositories/import_runs.py` | `importers/csv_importer.py` · `excel_importer.py` |
+| **Import CSV/Excel** | `ui/common/import_export_dialog.py` · `import_report_dialog.py` | *(inline)* | `services/import_service.py` | `repositories/import_runs.py` | `importers/excel_importer.py` |
 | **Export** | `ui/common/import_export_dialog.py` | *(inline)* | `services/export_service.py` | *(multiple)* | `infrastructure/io/csv_writer.py` |
 | **i18n / Translations** | `ui/common/i18n.py` | – | `services/i18n_service.py` | `repositories/i18n_strings.py` | `migrations/schema_patch.py` |
 | **App settings** | `ui/main_window.py` (menu) | – | *(direct repo access)* | `repositories/app_settings.py` | – |
@@ -165,25 +165,21 @@ Patches 1–006b + Tasks 1a–3 all done regarding `tr()`-wrapping. 111 audit ca
 
 ## Open Issues / Next Priorities
 
-**Aktueller Stand:** `main` = v1.2.5 (in Arbeit). Zyklus 3 (Ruff-Legacy-Cleanup), Zyklus 4
-(i18n-Seed-Übersetzungslücke) und Zyklus 5 (E501-Reflow) sind abgeschlossen. CI läuft Full-Repo-
-`ruff check .` mit vollem Regelsatz inkl. E501 (nur `src/security/` bleibt ausgenommen, AI-Edit-Lock).
+**Aktueller Stand:** `main` = v1.2.5 (released). Zyklus 3 (Ruff-Legacy-Cleanup), Zyklus 4
+(i18n-Seed-Übersetzungslücke), Zyklus 5 (E501-Reflow) und Zyklus 6 (CSV-Import-Vervollständigung)
+sind abgeschlossen. CI läuft Full-Repo-`ruff check .` mit vollem Regelsatz inkl. E501 (nur
+`src/security/` bleibt ausgenommen, AI-Edit-Lock). CI ist als Required Status Check im
+GitHub-Ruleset `main-protection` verankert (manuell vom Maintainer eingerichtet).
 
 ### Offenes / Nächste Schritte
-- **CI Required Status Check (angefragt, blockiert):** Der bestehende GitHub-Ruleset
-  `main-protection` (id 20660199) erzwingt PR-only + kein Force-Push, aber noch keinen grünen
-  CI-Check vor dem Merge. `gh api PATCH` auf den Ruleset-Endpoint schlägt mit dem aktuellen
-  `gh`-OAuth-Token (Scope `repo`) konsequent mit 404 fehl — vermutlich fehlt `Administration:
-  write`, das klassische OAuth-Scopes für Repository-Rulesets nicht abdecken. Braucht entweder
-  eine manuelle Änderung über die GitHub-Weboberfläche (Settings → Rules → Rulesets) oder ein
-  Fine-grained PAT mit `Administration: write`.
 - **Manuell zu erledigen** (AI-Edit-Lock auf `src/security/**`, siehe oben): 3× `F401`
   (`manager.py`: `os`, `time` ungenutzt; `bootstrap.py`: `verify_pin` ungenutzt) + 3× toter
   `# noqa: WPS433`-Kommentar in `manager.py` (kein gültiger Ruff-Code, Altlast).
-- **v1.2.2:** CSV-Import repariert für 4/10 Datensatz-Typen (accounts, employers, pay_rules,
-  categories). Die anderen 6 zielen auf ein veraltetes Datenmodell und werden bewusst mit klarer
-  Fehlermeldung abgewiesen statt zu raten — Neudesign des CSV-Spaltenformats ist ein separates
-  Produktthema, kein Bugfix. Details: HANDOVER.md.
+- **v1.3.0 (Zyklus 6):** CSV-Import unterstützt jetzt alle 10/10 Datensatz-Typen (vorher 4/10,
+  siehe v1.2.2). Spaltenformat = `ExportService.SCHEMAS[dataset]["fields"]` (Round-Trip mit
+  Export/Template-Download). `src/application/importers/csv_importer.py` bleibt ein
+  verwaistes, ungenutztes Modul (nicht der reale CSV-Pfad) — Löschen ist ein separater,
+  risikoarmer Aufräum-Task, kein Teil dieses Features.
 - Optional: CTkButton für Toolbar-Buttons (aktuell ttk.Button, dark via TTK-Styling)
 - Budgetplanung, Reporting/Charts als nächstes größeres Feature
 

@@ -6,6 +6,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.3.0] — 2026-08-13
+
+### Added
+
+- **CSV import now supports all 10 dataset types** (previously 4/10, see v1.2.2's "Known
+  Issues"): `income_fixed`, `income_hourly`, `expense_recurring`, `expense_variable`, `loans`,
+  and `loan_events` are no longer rejected. The accepted column format is exactly
+  `ExportService.SCHEMAS[dataset]["fields"]` — the same contract already used by CSV export and
+  the "download CSV template" feature, so the two are now a true round trip. German column-name
+  aliases are supported alongside the English export names, matching the 4 previously-working
+  types. FK references (employer/account/category) auto-create missing rows the same way
+  `excel_importer.py` already does, except `loan_events`' `loan_name` reference, which
+  deliberately does **not** auto-create — a missing loan produces a clear per-row error instead
+  of a silent zero-value placeholder loan.
+- `income_fixed`/`income_hourly`/`loans` upsert by their existing natural key
+  (`employer_id + year + month`, `name`); `expense_recurring`/`expense_variable`/`loan_events`
+  have no natural key at the DB level and always insert, matching `excel_importer.py`'s existing
+  behavior for those three rather than inventing new dedup semantics.
+- CSV import for `loans` now reads `annual_interest_rate`, a field `excel_importer.py` has never
+  read — closing a gap in the older Excel path rather than replicating it.
+
 ## [1.2.5] — 2026-08-13
 
 ### Changed
