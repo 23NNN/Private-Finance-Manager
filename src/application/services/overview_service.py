@@ -65,7 +65,6 @@ class OverviewService:
     def __init__(self, uow_factory=UnitOfWork) -> None:
         self._uow_factory = uow_factory
 
-
     def _parse_settings(self, notes: str | None) -> dict[str, str]:
         if not notes:
             return {}
@@ -190,10 +189,12 @@ class OverviewService:
                         bucket_fix[bucket] += amt
 
                 # variable expenses -> treated as debts/special expenses in the payout summary
-                vars_ = [v for v in uow.expense_variable.list_for_period(year, m) if v.status != VariableStatus.CANCELLED]
+                vars_ = [
+                    v for v in uow.expense_variable.list_for_period(year, m) if v.status != VariableStatus.CANCELLED
+                ]
                 for v in vars_:
                     bucket = _bucket_from_paybucket(getattr(v, "pay_bucket", PayBucket.NONE))
-                    bucket_debt[bucket] += (v.amount or Decimal("0"))
+                    bucket_debt[bucket] += v.amount or Decimal("0")
 
             # loans for year summary (payment+extra aggregated)
             loan_lines, loan_debt_bucket = self._build_loan_year_lines(uow, year)
@@ -252,7 +253,9 @@ class OverviewService:
             var_by_acc: dict[int, Decimal] = {}
             var_total = Decimal("0.00")
             for m in range(1, 13):
-                vars_ = [v for v in uow.expense_variable.list_for_period(year, m) if v.status != VariableStatus.CANCELLED]
+                vars_ = [
+                    v for v in uow.expense_variable.list_for_period(year, m) if v.status != VariableStatus.CANCELLED
+                ]
                 for v in vars_:
                     if v.account_id:
                         var_by_acc[v.account_id] = var_by_acc.get(v.account_id, Decimal("0")) + v.amount
@@ -306,7 +309,13 @@ class OverviewService:
 
             events_until_jan = uow.loan_events.list_for_loan_until(loan.id, Period(year, 1))
             ev_dicts_jan = [
-                {"event_type": e.event_type.value, "year": e.year, "month": e.month, "amount": e.amount, "new_regular_payment": e.new_regular_payment}
+                {
+                    "event_type": e.event_type.value,
+                    "year": e.year,
+                    "month": e.month,
+                    "amount": e.amount,
+                    "new_regular_payment": e.new_regular_payment,
+                }
                 for e in events_until_jan
             ]
             st_jan = compute_month_status(
@@ -319,7 +328,13 @@ class OverviewService:
 
             events_until_dez = uow.loan_events.list_for_loan_until(loan.id, Period(year, 12))
             ev_dicts_dez = [
-                {"event_type": e.event_type.value, "year": e.year, "month": e.month, "amount": e.amount, "new_regular_payment": e.new_regular_payment}
+                {
+                    "event_type": e.event_type.value,
+                    "year": e.year,
+                    "month": e.month,
+                    "amount": e.amount,
+                    "new_regular_payment": e.new_regular_payment,
+                }
                 for e in events_until_dez
             ]
             st_dez = compute_month_status(
@@ -335,7 +350,13 @@ class OverviewService:
             for mth in range(1, 13):
                 events = uow.loan_events.list_for_loan_until(loan.id, Period(year, mth))
                 ev_dicts = [
-                    {"event_type": e.event_type.value, "year": e.year, "month": e.month, "amount": e.amount, "new_regular_payment": e.new_regular_payment}
+                    {
+                        "event_type": e.event_type.value,
+                        "year": e.year,
+                        "month": e.month,
+                        "amount": e.amount,
+                        "new_regular_payment": e.new_regular_payment,
+                    }
                     for e in events
                 ]
                 st_m = compute_month_status(
@@ -349,7 +370,7 @@ class OverviewService:
                 extra_sum += st_m.extra
 
                 timing = self._effective_loan_timing_for_month(uow, loan, year, mth)
-                debt_bucket[timing] += (st_m.payment + st_m.extra)
+                debt_bucket[timing] += st_m.payment + st_m.extra
 
             out.append(
                 LoanMonthLineVM(
@@ -366,7 +387,6 @@ class OverviewService:
         debt_bucket["BEGINNING"] = _r2(debt_bucket["BEGINNING"])
         debt_bucket["MID"] = _r2(debt_bucket["MID"])
         return out, debt_bucket
-
 
     def _has_event_in_year(self, uow, loan_id: int, year: int) -> bool:
         for m in range(1, 13):
@@ -427,7 +447,11 @@ class OverviewService:
         incomes_vm.sort(key=lambda x: x.employer_name.lower())
 
         recurring = [r for r in uow.expense_recurring.list_all() if r.status == RecurringStatus.ACTIVE]
-        vars_ = [v for v in uow.expense_variable.list_for_period(period.year, period.month) if v.status != VariableStatus.CANCELLED]
+        vars_ = [
+            v
+            for v in uow.expense_variable.list_for_period(period.year, period.month)
+            if v.status != VariableStatus.CANCELLED
+        ]
 
         fix_by_acc: dict[int, Decimal] = {}
         abo_sum = Decimal("0.00")
@@ -523,7 +547,7 @@ class OverviewService:
         for v in vars_:
             # variable expenses are tracked as special expenses/"debts" in the payout summary
             bucket = _bucket_from_paybucket(getattr(v, "pay_bucket", PayBucket.NONE))
-            bucket_debt[bucket] += (v.amount or Decimal("0"))
+            bucket_debt[bucket] += v.amount or Decimal("0")
 
         # loan payments -> assigned correctly by timing (BEGINNING/MID)
         bucket_debt["BEGINNING"] += loan_debt_bucket.get("BEGINNING", Decimal("0.00"))
@@ -558,7 +582,13 @@ class OverviewService:
 
             events = uow.loan_events.list_for_loan_until(loan.id, period)
             ev_dicts = [
-                {"event_type": e.event_type.value, "year": e.year, "month": e.month, "amount": e.amount, "new_regular_payment": e.new_regular_payment}
+                {
+                    "event_type": e.event_type.value,
+                    "year": e.year,
+                    "month": e.month,
+                    "amount": e.amount,
+                    "new_regular_payment": e.new_regular_payment,
+                }
                 for e in events
             ]
             st = compute_month_status(
@@ -580,13 +610,12 @@ class OverviewService:
             )
 
             timing = self._effective_loan_timing_for_month(uow, loan, period.year, period.month)
-            debt_bucket[timing] += (st.payment + st.extra)
+            debt_bucket[timing] += st.payment + st.extra
 
         out.sort(key=lambda x: x.loan_name.lower())
         debt_bucket["BEGINNING"] = _r2(debt_bucket["BEGINNING"])
         debt_bucket["MID"] = _r2(debt_bucket["MID"])
         return out, debt_bucket
-
 
     def _savings_pct_for_employer(self, rules, employer_id: int, at: date) -> Decimal:
         best = None

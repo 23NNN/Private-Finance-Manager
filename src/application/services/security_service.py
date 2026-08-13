@@ -35,7 +35,9 @@ class SecurityService:
     def set_mode(self, *, new_mode: str, current_pin: str | None, new_pin: str | None) -> None:
         cfg = load_security_config(self._mgr.security_path())
         if cfg is None:
-            cfg = SecurityConfig(mode="NONE", pin_salt_b64=None, pin_hash_b64=None, pin_iters=200_000, device_key_dpapi_b64=None)
+            cfg = SecurityConfig(
+                mode="NONE", pin_salt_b64=None, pin_hash_b64=None, pin_iters=200_000, device_key_dpapi_b64=None
+            )
             save_security_config(self._mgr.security_path(), cfg)
         dispose_engine()
         self._mgr.set_mode(old_cfg=cfg, new_mode=new_mode, current_pin=current_pin, new_pin=new_pin)
