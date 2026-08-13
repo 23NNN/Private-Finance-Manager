@@ -306,9 +306,90 @@ def test_import_income_hourly_round_trips_with_export(tmp_path: Path):
         assert acc.label == "GIRO"
 
 
+def test_import_expense_recurring_always_inserts(tmp_path: Path):
+    svc = ImportService()
+
+    path = _write_csv(
+        tmp_path,
+        "expense_recurring.csv",
+        ["name", "category_name", "amount", "frequency_months", "due_day", "status", "pay_bucket"],
+        [["Netflix", "Abos", "12.99", "1", "5", "ACTIVE", "NONE"]],
+    )
+    result = svc.import_csv(path, "expense_recurring")
+    assert result["status"] == "ok"
+    assert result["inserted"] == 1
+
+    with UnitOfWork() as uow:
+        rows = uow.expense_recurring.list_all()
+        assert len(rows) == 1
+        row = rows[0]
+        assert row.name == "Netflix"
+        assert row.amount == Decimal("12.99")
+        assert row.frequency_months == 1
+        assert row.due_day == 5
+        assert row.status.value == "ACTIVE"
+        assert row.account is not None  # required FK, auto-created via DEFAULT fallback
+        assert row.category.name == "Abos"
+
+    # No natural key for this dataset (matches excel_importer.py) -- a second
+    # import of equivalent content always inserts a new row, it never updates.
+    path2 = _write_csv(
+        tmp_path,
+        "expense_recurring2.csv",
+        ["name", "category_name", "amount", "frequency_months", "due_day", "status", "pay_bucket"],
+        [["Netflix", "Abos", "13.99", "1", "5", "ACTIVE", "NONE"]],
+    )
+    result2 = svc.import_csv(path2, "expense_recurring")
+    assert result2["inserted"] == 1
+    assert result2["updated"] == 0
+
+    with UnitOfWork() as uow:
+        rows = uow.expense_recurring.list_all()
+        assert len(rows) == 2
+
+
+def test_import_expense_recurring_round_trips_with_export(tmp_path: Path):
+    svc = ImportService()
+
+    path = _write_csv(
+        tmp_path,
+        "expense_recurring.csv",
+        [
+            "name",
+            "category_name",
+            "amount",
+            "frequency_months",
+            "due_day",
+            "anchor_month",
+            "status",
+            "account_label",
+            "pay_bucket",
+            "allocation_override",
+        ],
+        [["Miete", "Wohnen", "850.00", "1", "1", "", "ACTIVE", "GIRO", "MID", "CASHFLOW"]],
+    )
+    svc.import_csv(path, "expense_recurring")
+
+    export_path = str(tmp_path / "expense_recurring_export.csv")
+    ExportService().export_csv(export_path, "expense_recurring")
+
+    result = svc.import_csv(export_path, "expense_recurring")
+    assert result["status"] == "ok"
+    assert result["inserted"] == 1
+
+    with UnitOfWork() as uow:
+        rows = [r for r in uow.expense_recurring.list_all() if r.name == "Miete"]
+        assert len(rows) == 2
+        row = rows[0]
+        assert row.amount == Decimal("850.00")
+        assert row.pay_bucket.value == "MID"
+        assert row.allocation_override.value == "CASHFLOW"
+        assert row.account.label == "GIRO"
+
+
 @pytest.mark.parametrize(
     "dataset",
-    ["expense_recurring", "expense_variable", "loans", "loan_events"],
+    ["expense_variable", "loans", "loan_events"],
 )
 def test_import_csv_rejects_unsupported_datasets(tmp_path: Path, dataset: str):
     svc = ImportService()

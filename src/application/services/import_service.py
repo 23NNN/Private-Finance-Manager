@@ -18,13 +18,16 @@ from src.infrastructure.db.orm_models import (
     Employer,
     ExpenseCategory,
     ExpenseGroup,
+    ExpenseRecurring,
     ImportRun,
     IncomeFixed,
     IncomeHourly,
+    PayBucket,
     PayoutTiming,
     PayRule,
     PayRuleType,
     PayRuleUnit,
+    RecurringStatus,
 )
 from src.infrastructure.io.csv_reader import read_csv_dicts
 from src.infrastructure.unit_of_work import UnitOfWork
@@ -147,6 +150,26 @@ def _payout_timing_from_any(value: Any) -> PayoutTiming:
     return PayoutTiming(_norm(value))
 
 
+def _pay_bucket_from_any(value: Any) -> PayBucket:
+    s = _norm(value).lower()
+    if s in {"", "-", "—", "none", "kein", "keine", "nichts"}:
+        return PayBucket.NONE
+    if s in {"anfang", "beginning", "start"}:
+        return PayBucket.BEGINNING
+    if s in {"mitte", "mid"}:
+        return PayBucket.MID
+    return PayBucket(_norm(value))
+
+
+def _recurring_status_from_any(value: Any) -> RecurringStatus:
+    s = _norm(value).lower()
+    if not s or s in {"active", "aktiv"}:
+        return RecurringStatus.ACTIVE
+    if s in {"inactive", "inaktiv"}:
+        return RecurringStatus.INACTIVE
+    return RecurringStatus(_norm(value).upper())
+
+
 def _ensure_default_categories(uow: UnitOfWork) -> None:
     existing = {c.name: c for c in uow.expense_categories.list_all()}
 
@@ -180,7 +203,6 @@ class ImportService:
     # dataset, not a bug fix — rejected explicitly instead of silently
     # producing wrong or crashing imports. Use the Excel import instead.
     _UNSUPPORTED_CSV_DATASETS = {
-        "expense_recurring",
         "expense_variable",
         "loans",
         "loan_events",
@@ -249,6 +271,15 @@ class ImportService:
                 )
                 uow.accounts.upsert(obj)
                 acc_by_label[lbl] = obj
+                return obj
+
+            def ensure_category(name: str, group: ExpenseGroup) -> ExpenseCategory:
+                nm = (name or "").strip() or "Allgemein"
+                if nm in cat_by_name:
+                    return cat_by_name[nm]
+                obj = ExpenseCategory(name=nm, group=group)
+                uow.expense_categories.upsert(obj)
+                cat_by_name[nm] = obj
                 return obj
 
             def find_pay_rule(
@@ -533,6 +564,49 @@ class ImportService:
                             )
                             inserted += 1
 
+                    elif dataset == "expense_recurring":
+                        name = _norm(_get(r, "name", "bezeichnung"))
+                        if not name:
+                            issues.append(
+                                ImportIssue(dataset, row_idx, "name", "", "Required field missing – row skipped.")
+                            )
+                            skipped += 1
+                            continue
+
+                        cat_name = _norm(_get(r, "category_name", "kategorie")) or "Allgemein (Fix)"
+                        category = ensure_category(cat_name, ExpenseGroup.FIX)
+
+                        amount = parse_decimal(_get(r, "amount", "betrag"), default=Decimal("0"))
+                        freq = parse_int(_get(r, "frequency_months", "intervall"), default=1)
+                        if freq not in (1, 3, 12):
+                            freq = 1
+                        due_day = parse_int(_get(r, "due_day", "faellig", "tag"), default=1)
+                        anchor_raw = _get(r, "anchor_month", "startmonat")
+                        anchor_month = parse_int(anchor_raw, min_value=1, max_value=12) if _norm(anchor_raw) else None
+                        status = _recurring_status_from_any(_get(r, "status"))
+                        acc_label = _norm(_get(r, "account_label", "konto"))
+                        account = ensure_account(acc_label)
+                        pay_bucket = _pay_bucket_from_any(_get(r, "pay_bucket", "zahlungszeitpunkt"))
+                        override = _alloc_override_from_any(_get(r, "allocation_override", "modusoverride"))
+                        notes = _norm(_get(r, "notes", "notiz")) or None
+
+                        uow.expense_recurring.upsert(
+                            ExpenseRecurring(
+                                name=name,
+                                category_id=category.id,
+                                amount=amount,
+                                frequency_months=freq,
+                                due_day=due_day,
+                                anchor_month=anchor_month,
+                                status=status,
+                                account_id=account.id,
+                                pay_bucket=pay_bucket,
+                                notes=notes,
+                                allocation_override=override,
+                            )
+                        )
+                        inserted += 1
+
                     else:
                         raise ValueError(f"Nicht implementiert: {dataset}")
 
@@ -645,6 +719,29 @@ class ImportService:
                 "auszahlung",
                 "account_label",
                 "konto",
+            }
+
+        if dataset == "expense_recurring":
+            return base | {
+                "bezeichnung",
+                "category_name",
+                "kategorie",
+                "amount",
+                "betrag",
+                "frequency_months",
+                "intervall",
+                "due_day",
+                "faellig",
+                "tag",
+                "anchor_month",
+                "startmonat",
+                "status",
+                "account_label",
+                "konto",
+                "pay_bucket",
+                "zahlungszeitpunkt",
+                "allocation_override",
+                "modusoverride",
             }
 
         return base
