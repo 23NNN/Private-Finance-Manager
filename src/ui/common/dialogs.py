@@ -4,9 +4,9 @@ from __future__ import annotations
 import tkinter as tk
 from dataclasses import dataclass
 from tkinter import ttk
+from typing import Callable
 
 from src.ui.common.i18n import tr
-from typing import Callable
 
 
 @dataclass(frozen=True)

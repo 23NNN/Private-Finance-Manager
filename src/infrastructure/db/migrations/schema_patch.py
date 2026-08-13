@@ -61,7 +61,7 @@ def ensure_schema() -> list[str]:
         # ---- i18n: app_setting + i18n_string ----
         if "app_setting" not in tables or "i18n_string" not in tables:
             try:
-                from src.infrastructure.db.orm_models import Base, AppSetting, I18nString  # noqa: F401
+                from src.infrastructure.db.orm_models import AppSetting, Base, I18nString  # noqa: F401
 
                 Base.metadata.create_all(engine, tables=[AppSetting.__table__, I18nString.__table__])
                 tables = set(insp.get_table_names())
@@ -72,6 +72,7 @@ def ensure_schema() -> list[str]:
         if "app_setting" in tables and "i18n_string" in tables:
             try:
                 from sqlalchemy import select
+
                 from src.infrastructure.db.orm_models import AppSetting, I18nString
 
                 # default language
@@ -120,8 +121,6 @@ def ensure_schema() -> list[str]:
                     "lang.it": {"de": "Italienisch", "en": "Italian", "fr": "Italian", "es": "Italian", "it": "Italiano"},
                     "lang.restart.title": {"de": "Sprache geändert", "en": "Language changed", "fr": "Language changed", "es": "Language changed", "it": "Language changed"},
                     "lang.restart.msg": {"de": "Die App wird neu gestartet, um die Sprache zu übernehmen.", "en": "The app will restart to apply the language.", "fr": "The app will restart to apply the language.", "es": "The app will restart to apply the language.", "it": "The app will restart to apply the language."},
-                    "common.ok": {"de": "OK", "en": "OK", "fr": "OK", "es": "OK", "it": "OK"},
-                    "common.cancel": {"de": "Abbrechen", "en": "Cancel", "fr": "Cancel", "es": "Cancel", "it": "Cancel"},
                     "common.copy": {"de": "Kopieren", "en": "Copy", "fr": "Copy", "es": "Copy", "it": "Copy"},
                     "common.show_details": {"de": "Details anzeigen", "en": "Show details", "fr": "Show details", "es": "Show details", "it": "Show details"},
                     "common.hide_details": {"de": "Details ausblenden", "en": "Hide details", "fr": "Hide details", "es": "Hide details", "it": "Hide details"},
@@ -140,8 +139,6 @@ def ensure_schema() -> list[str]:
                     "filter.all": {"de": "Alle", "en": "All", "fr": "All", "es": "All", "it": "All"},
                     "status.active": {"de": "Aktiv", "en": "Active", "fr": "Active", "es": "Active", "it": "Active"},
                     "status.closed": {"de": "Geschlossen", "en": "Closed", "fr": "Closed", "es": "Closed", "it": "Closed"},
-                    "timing.beginning": {"de": "Anfang", "en": "Beginning", "fr": "Beginning", "es": "Beginning", "it": "Beginning"},
-                    "timing.mid": {"de": "Mitte", "en": "Mid", "fr": "Mid", "es": "Mid", "it": "Mid"},
                     "common.refresh": {"de": "Aktualisieren", "en": "Refresh", "fr": "Refresh", "es": "Refresh", "it": "Refresh"},
                     "common.yes": {"de": "Ja", "en": "Yes", "fr": "Oui", "es": "Sí", "it": "Sì"},
                     "common.no": {"de": "Nein", "en": "No", "fr": "Non", "es": "No", "it": "No"},
@@ -149,7 +146,6 @@ def ensure_schema() -> list[str]:
                     "common.edit": {"de": "Bearbeiten", "en": "Edit", "fr": "Modifier", "es": "Editar", "it": "Modifica"},
                     "common.delete": {"de": "Löschen", "en": "Delete", "fr": "Supprimer", "es": "Eliminar", "it": "Elimina"},
                     "common.reset": {"de": "Zurücksetzen", "en": "Reset", "fr": "Réinitialiser", "es": "Restablecer", "it": "Reimposta"},
-                    "common.notice": {"de": "Hinweis", "en": "Notice", "fr": "Avis", "es": "Aviso", "it": "Avviso"},
                     "common.error": {"de": "Fehler", "en": "Error", "fr": "Erreur", "es": "Error", "it": "Errore"},
                     "accounts.filter.account_or_label": {"de": "Kontoname/Label:", "en": "Account/Label:", "fr": "Compte/Libellé:", "es": "Cuenta/Etiqueta:", "it": "Conto/Etichetta:"},
                     "accounts.filter.bank": {"de": "Bank:", "en": "Bank:", "fr": "Banque:", "es": "Banco:", "it": "Banca:"},

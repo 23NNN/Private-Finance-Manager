@@ -2,10 +2,8 @@
 from __future__ import annotations
 
 import argparse
-import os
 import zipfile
 from pathlib import Path
-
 
 EXCLUDE_DIRS = {
     ".git",

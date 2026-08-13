@@ -1,9 +1,8 @@
 # src/infrastructure/db/migrations/versions/0002_income_special_and_savings_rule_validity.py
 from __future__ import annotations
 
-from alembic import op
 import sqlalchemy as sa
-
+from alembic import op
 
 revision = "0002_income_special_and_savings_rule_validity"
 down_revision = "0001_initial"

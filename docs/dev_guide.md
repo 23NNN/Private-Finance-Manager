@@ -102,7 +102,7 @@ Config:
 
 - Focus: Domain Policies + Services are testable without UI.
 - Tests import via `src` (Repo-Root in `sys.path` via `tests/conftest.py`).
-- CI (`.github/workflows/ci.yml`) runs `pytest` and diff-scoped `ruff` automatically on every PR/push to `main`.
+- CI (`.github/workflows/ci.yml`) runs `pytest` and `ruff check . --exclude src/security --ignore E501` automatically on every PR/push to `main`. E501 (line-too-long, ~613 findings) and `src/security/` (AI-edit-locked) are excluded until a dedicated cleanup pass; everything else is enforced repo-wide.
 
 Run:
 ```powershell

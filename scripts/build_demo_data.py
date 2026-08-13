@@ -1,7 +1,7 @@
 # scripts/build_demo_data.py
-from __future__ import annotations
-
 """Generate a fully populated demo database (dummy data) for the Finance Manager."""
+
+from __future__ import annotations
 
 import argparse
 import os
@@ -9,7 +9,7 @@ import random
 import sys
 from dataclasses import dataclass
 from datetime import date, timedelta
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import ROUND_HALF_UP, Decimal
 from pathlib import Path
 from typing import Any
 
@@ -21,10 +21,10 @@ from sqlalchemy import select  # noqa: E402
 from sqlalchemy.exc import IntegrityError  # noqa: E402
 
 from src.config.settings import get_settings  # noqa: E402
+from src.infrastructure.db import orm_models as orm  # noqa: E402
 from src.infrastructure.db.engine import SessionLocal, init_engine  # noqa: E402
 from src.infrastructure.db.migrations.runner import upgrade_db_if_possible  # noqa: E402
 from src.infrastructure.logging_setup import configure_logging  # noqa: E402
-from src.infrastructure.db import orm_models as orm  # noqa: E402
 
 
 def _r2(x: Decimal) -> Decimal:

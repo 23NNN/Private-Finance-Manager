@@ -6,7 +6,7 @@ from decimal import Decimal, InvalidOperation
 from tkinter import ttk
 from typing import Callable
 
-from src.ui.common.i18n import tr, trf
+from src.ui.common.i18n import tr
 
 SalaryProvider = Callable[[int], Decimal]
 

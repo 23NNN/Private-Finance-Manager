@@ -1,6 +1,5 @@
 # scripts/doctor.py
 """Repo/Build/Runtime Healthcheck (Finanzmanager).
-import ast
 
 Schwerpunkte:
 - Repo-/Packaging-Grundlagen (Layout, Python-Version)
@@ -17,13 +16,14 @@ Dieses Script ist bewusst dependency-arm (stdlib-only) und wird von pre_build_ch
 from __future__ import annotations
 
 import argparse
+import ast
 import builtins
 import dis
-import re
 import importlib
 import inspect
 import os
 import platform
+import re
 import sqlite3
 import sys
 from dataclasses import dataclass
@@ -363,7 +363,10 @@ class Doctor:
                             if isinstance(tgt, ast.Attribute) and isinstance(tgt.value, ast.Name) and tgt.value.id == "self":
                                 attrs.add(tgt.attr)
 
-                allowed = methods | attrs
+                # Von tk.Widget/tk.Toplevel/tk.Misc geerbte Methoden werden nie explizit
+                # auf der Dialog-Klasse definiert, sind aber immer vorhanden.
+                inherited_tk_methods = {"destroy", "quit"}
+                allowed = methods | attrs | inherited_tk_methods
 
                 for call in [n for n in ast.walk(node) if isinstance(n, ast.Call)]:
                     # keyword: command=self.foo

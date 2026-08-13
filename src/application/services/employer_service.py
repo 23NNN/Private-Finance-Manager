@@ -10,14 +10,13 @@ from src.application.services.reference_data_service import AccountRef
 from src.infrastructure.db.orm_models import (
     Account,
     Employer,
+    PayoutTiming,
     PayRule,
     PayRuleType,
     PayRuleUnit,
-    PayoutTiming,
     SavingsRule,
 )
 from src.infrastructure.unit_of_work import UnitOfWork
-
 
 _MIN_SAVINGS = Decimal("0.10")
 _MAX_SAVINGS = Decimal("0.35")

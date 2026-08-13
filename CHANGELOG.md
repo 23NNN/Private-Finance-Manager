@@ -6,6 +6,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.2.3] — 2026-08-13
+
+### Fixed
+
+- **`doctor.py` UI-callback-contract check was silently broken**: `import ast` sat inside the module docstring instead of the real import block, so the check never ran (the resulting `NameError` was swallowed by a broad `except Exception`). Fixed the import placement and added an allowlist for inherited Tk widget methods (`destroy`, `quit`) the check would otherwise false-positive on.
+- **Duplicate dict/set keys (F601)**: `parsers.py`'s month-name map and 5 i18n seed keys in `schema_patch.py` were defined twice in the same literal. For the i18n keys, the earlier (dead) definitions had untranslated English placeholder text for `fr`/`es`/`it`, silently shadowed by later, correctly localized entries — removed the dead duplicates, runtime-effective values unchanged.
+- **`scripts/build_demo_data.py`, `scripts/i18n_audit.py`, `scripts/finalize_hourly_legacy_cleanup.py` lost their module docstrings**: `from __future__ import annotations` was placed before the docstring, demoting it to a dead string-expression statement invisible to `ast.get_docstring()`. Restored correct order.
+- Removed a dead `I18nService` re-export from `src/application/services/__init__.py` (nothing imported it that way) and a stray `ftrf = trf` alias that had been sitting between two import blocks in `main_window.py`, both of which caused `E402`.
+
+### Changed
+
+- Resolved all pre-existing Ruff findings on `main` except `E501` (line-too-long, tracked as a separate follow-up) and the handful inside `src/security/` (AI-edit-locked path, left for manual maintainer review).
+- CI's `ruff` step now runs full-repo (`ruff check . --exclude src/security --ignore E501`) instead of diff-scoped, so regressions in untouched files are caught too.
+
+### Known Issues
+
+- Discovered (not fixed in this release): ~60 i18n seed keys in `schema_patch.py` carry untranslated English placeholder text for `fr`/`es`/`it` (menu items, tab labels, common actions). Not caught by `i18n_audit.py`, which only checks for missing `tr()` wrapping, not translation quality of seed values.
+
 ## [1.2.2] — 2026-08-13
 
 ### Fixed

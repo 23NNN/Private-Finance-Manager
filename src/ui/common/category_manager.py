@@ -2,13 +2,12 @@
 from __future__ import annotations
 
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import messagebox, ttk
 
 from src.application.services.reference_data_service import ReferenceDataService
 from src.ui.common.controls import create_treeview_with_scrollbars
 from src.ui.common.dialogs import FieldSpec, FormDialog
 from src.ui.common.i18n import tr
-
 
 _GROUP_KEY_BY_CODE: dict[str, str] = {
     "FIX": "category.group.fix",

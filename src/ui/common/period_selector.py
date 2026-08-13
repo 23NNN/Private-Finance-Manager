@@ -1,8 +1,8 @@
 # ui/common/period_selector.py
 from __future__ import annotations
 
-from datetime import datetime
 import tkinter as tk
+from datetime import datetime
 from tkinter import ttk
 
 from src.domain.models.period import Period

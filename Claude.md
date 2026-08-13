@@ -149,9 +149,11 @@ New keys must be seeded for **all 5 languages** in `schema_patch.py`.
 
 ---
 
-## i18n Status (all complete ✅)
+## i18n Status
 
-Patches 1–006b + Tasks 1a–3 all done. 108 audit candidates remaining – all confirmed false positives (enum values, Tkinter types, font names, dev-only logger strings).
+Patches 1–006b + Tasks 1a–3 all done regarding `tr()`-wrapping. 108 audit candidates remaining – all confirmed false positives (enum values, Tkinter types, font names, dev-only logger strings).
+
+**Known gap (found 2026-08-13, unfixed):** ~60 seed keys in `schema_patch.py` have untranslated English placeholder text for `fr`/`es`/`it` (e.g. menu items, tab labels, common actions). `i18n_audit.py` does not catch this — it only audits for missing `tr()` calls, not translation quality of existing seed values. See "Open Issues" above.
 
 **Intentionally German data (do NOT translate):**
 - `excel_importer.py` / `import_service.py` → German Excel column headers
@@ -163,26 +165,26 @@ Patches 1–006b + Tasks 1a–3 all done. 108 audit candidates remaining – all
 
 ## Open Issues / Next Priorities
 
-**Aktueller Stand:** `main` = v1.2.0 (released 2026-06-26); Branch `feature/security-hardening-and-robustness-fixes` (2026-08-12) offen.
-
-v1.2.0 enthält:
-- IDEA-03: Intervall-Filter für Fixkosten ✅
-- IDEA-02: Verschieben-Button + vollständiges Kontextmenü ✅
-- IDEA-01: CustomTkinter Integration ✅ (CTkTabview, dark mode default, Appearance-Menü)
-- fix: visuelle Lücken (Canvas-bg, Höhenfüllung, apply_for_mode Timing) ✅
-
-Branch `feature/security-hardening-and-robustness-fixes` (unmerged): Security-Invariant-Test +
-Deny-Rule (siehe oben), Repository-Fix für `autoflush=False`-ID-Bug (7 Services betroffen, jetzt
-behoben + regressionsgetestet), UnitOfWork übersetzt DB-Exceptions zu `DomainError`, CI (Ruff
-diff-scoped + Pytest), Dependency-Pinning, `.idea/` entfernt.
+**Aktueller Stand:** `main` = v1.2.2 (released 2026-08-13). Branch `chore/ruff-legacy-cleanup`
+(Zyklus 3, 2026-08-13) offen: alle Ruff-Findings außer E501 behoben (siehe HANDOVER.md für Details
+je Regel). CI läuft jetzt Full-Repo-`ruff check .` statt diff-gescoped (E501 + `src/security/`
+weiterhin ausgenommen).
 
 ### Offenes / Nächste Schritte
+- **Zyklus 4 (geplant, nicht gestartet):** E501-Reflow (~613 zu lange Zeilen) in Batches pro
+  Verzeichnis. `line-length` bleibt bei 120 (Anheben spart laut Analyse kaum Aufwand).
+- **Manuell zu erledigen** (AI-Edit-Lock auf `src/security/**`, siehe oben): 3× `F401`
+  (`manager.py`: `os`, `time` ungenutzt; `bootstrap.py`: `verify_pin` ungenutzt) + 3× toter
+  `# noqa: WPS433`-Kommentar in `manager.py` (kein gültiger Ruff-Code, Altlast).
+- **i18n-Lücke entdeckt (Zyklus 3, nicht behoben):** ~60 Keys in `schema_patch.py` haben
+  unübersetzten englischen Platzhaltertext für `fr`/`es`/`it` (z.B. `tab.income`,
+  `menu.security.mode`, `common.copy`) — live ausgeliefert, nicht durch `i18n_audit.py` erfasst
+  (das prüft nur fehlendes `tr()`-Wrapping, nicht Übersetzungsqualität der Seed-Werte). Widerspricht
+  der bisherigen "i18n Status: complete"-Annahme unten — echte Übersetzungsarbeit, kein Lint-Fix.
 - **v1.2.2:** CSV-Import repariert für 4/10 Datensatz-Typen (accounts, employers, pay_rules,
-  categories). Die anderen 6 (income_fixed, income_hourly, expense_recurring, expense_variable,
-  loans, loan_events) zielen auf ein veraltetes Datenmodell und werden bewusst mit klarer
+  categories). Die anderen 6 zielen auf ein veraltetes Datenmodell und werden bewusst mit klarer
   Fehlermeldung abgewiesen statt zu raten — Neudesign des CSV-Spaltenformats ist ein separates
   Produktthema, kein Bugfix. Details: HANDOVER.md.
-- 782 vorbestehende Ruff-Fehler auf `main` (v.a. Zeilenlänge) — CI lintet vorerst nur Diff-Dateien.
 - Optional: CTkButton für Toolbar-Buttons (aktuell ttk.Button, dark via TTK-Styling)
 - Budgetplanung, Reporting/Charts als nächstes größeres Feature
 

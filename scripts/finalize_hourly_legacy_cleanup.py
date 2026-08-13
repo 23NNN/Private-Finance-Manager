@@ -1,6 +1,4 @@
 # scripts/finalize_hourly_legacy_cleanup.py
-from __future__ import annotations
-
 """Finale Bereinigung: BW/BY-Legacy Werte in income_hourly entfernen.
 
 Warum:
@@ -22,8 +20,10 @@ Eigenschaften:
 Beispiele:
 - Dry-Run:  python scripts/finalize_hourly_legacy_cleanup.py
 - Apply:    python scripts/finalize_hourly_legacy_cleanup.py --apply
-- Anderer DB-Pfad: python scripts/finalize_hourly_legacy_cleanup.py --db .\demo_data\finanzmanager.sqlite --apply
+- Anderer DB-Pfad: python scripts/finalize_hourly_legacy_cleanup.py --db .\\demo_data\finanzmanager.sqlite --apply
 """
+
+from __future__ import annotations
 
 import argparse
 import sqlite3
@@ -48,7 +48,7 @@ def _table_columns(con: sqlite3.Connection, table: str) -> set[str]:
 def _get_default_db_path() -> Path:
     root = _repo_root()
     _ensure_syspath(root)
-    from src.config.settings import get_settings  # noqa: WPS433
+    from src.config.settings import get_settings
 
     return get_settings().db_path()
 

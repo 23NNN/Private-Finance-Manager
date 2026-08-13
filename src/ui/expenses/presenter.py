@@ -447,15 +447,15 @@ class ExpensesPresenter:
 
             if self._is_year_view():
                 y = period.year
-                for l in self._loans:
+                for loan in self._loans:
                     if loan_status_ui != self._all_label():
                         want = _ui_to_code(loan_status_ui, LOAN_STATUS_KEYS, default=None)
-                        if want and _v(l.status) != want:
+                        if want and _v(loan.status) != want:
                             continue
 
-                    if only_relevant and _v(l.status) == "CLOSED":
+                    if only_relevant and _v(loan.status) == "CLOSED":
                         try:
-                            ev = self._loan.list_events(l.id)
+                            ev = self._loan.list_events(loan.id)
                             if not any(getattr(e, "event_date", None) and e.event_date.year == y for e in ev):
                                 continue
                         except Exception:
@@ -465,14 +465,14 @@ class ExpensesPresenter:
                     eff_timings: set[str | None] = set()
                     for m in range(1, 13):
                         try:
-                            eff = self._loan.get_effective_settings(l.id, Period(y, m))
+                            eff = self._loan.get_effective_settings(loan.id, Period(y, m))
                             eff_acc_ids.add(
-                                int(eff.get("account_id")) if eff.get("account_id") is not None else getattr(l, "account_id", None)
+                                int(eff.get("account_id")) if eff.get("account_id") is not None else getattr(loan, "account_id", None)
                             )
-                            eff_timings.add(str(eff.get("payment_timing") or getattr(l, "payment_timing", "MID")))
+                            eff_timings.add(str(eff.get("payment_timing") or getattr(loan, "payment_timing", "MID")))
                         except Exception:
-                            eff_acc_ids.add(getattr(l, "account_id", None))
-                            eff_timings.add(getattr(l, "payment_timing", "MID"))
+                            eff_acc_ids.add(getattr(loan, "account_id", None))
+                            eff_timings.add(getattr(loan, "payment_timing", "MID"))
 
                     eff_acc_id = next(iter(eff_acc_ids)) if len(eff_acc_ids) == 1 else None
                     eff_timing = next(iter(eff_timings)) if len(eff_timings) == 1 else None
@@ -488,24 +488,24 @@ class ExpensesPresenter:
                         if len(eff_timings) > 1:
                             continue
 
-                    st_jan = self._loan.get_month_status(l.id, Period(y, 1))
-                    st_dez = self._loan.get_month_status(l.id, Period(y, 12))
+                    st_jan = self._loan.get_month_status(loan.id, Period(y, 1))
+                    st_dez = self._loan.get_month_status(loan.id, Period(y, 12))
 
                     pay_sum = Decimal("0")
                     extra_sum = Decimal("0")
                     for m in range(1, 13):
-                        st_m = self._loan.get_month_status(l.id, Period(y, m))
+                        st_m = self._loan.get_month_status(loan.id, Period(y, m))
                         pay_sum += Decimal(st_m.get("payment") or 0)
                         extra_sum += Decimal(st_m.get("extra") or 0)
 
-                    status = _code_to_ui(_v(l.status), LOAN_STATUS_KEYS)
+                    status = _code_to_ui(_v(loan.status), LOAN_STATUS_KEYS)
                     dash = tr("common.dash")
                     self._view.loan_tree.insert(
                         "",
                         "end",
-                        iid=str(l.id),
+                        iid=str(loan.id),
                         values=(
-                            l.name,
+                            loan.name,
                             status,
                             dash if len(eff_acc_ids) > 1 else self._acc_label(eff_acc_id),
                             dash if len(eff_timings) > 1 else self._timing_to_ui(eff_timing),
@@ -515,18 +515,18 @@ class ExpensesPresenter:
                             _m(Decimal(st_dez.get("open_after") or 0)),
                         ),
                     )
-                    inserted_loan_ids.add(int(l.id))
+                    inserted_loan_ids.add(int(loan.id))
 
             else:
-                for l in self._loans:
+                for loan in self._loans:
                     if loan_status_ui != self._all_label():
                         want = _ui_to_code(loan_status_ui, LOAN_STATUS_KEYS, default=None)
-                        if want and _v(l.status) != want:
+                        if want and _v(loan.status) != want:
                             continue
 
-                    if only_relevant and _v(l.status) == "CLOSED":
+                    if only_relevant and _v(loan.status) == "CLOSED":
                         try:
-                            if hasattr(self._loan, "has_event_in_period") and not self._loan.has_event_in_period(l.id, period):
+                            if hasattr(self._loan, "has_event_in_period") and not self._loan.has_event_in_period(loan.id, period):
                                 continue
                         except Exception:
                             pass
@@ -534,27 +534,27 @@ class ExpensesPresenter:
                     eff: dict = {}
                     try:
                         if hasattr(self._loan, "get_effective_settings"):
-                            eff = self._loan.get_effective_settings(l.id, period)
+                            eff = self._loan.get_effective_settings(loan.id, period)
                     except Exception:
                         eff = {}
 
-                    eff_acc_id = int(eff.get("account_id")) if eff.get("account_id") is not None else getattr(l, "account_id", None)
-                    eff_timing = str(eff.get("payment_timing") or getattr(l, "payment_timing", "MID"))
+                    eff_acc_id = int(eff.get("account_id")) if eff.get("account_id") is not None else getattr(loan, "account_id", None)
+                    eff_timing = str(eff.get("payment_timing") or getattr(loan, "payment_timing", "MID"))
 
                     if loan_acc_id is not None and eff_acc_id != loan_acc_id:
                         continue
                     if loan_timing is not None and eff_timing != loan_timing:
                         continue
 
-                    st = self._loan.get_month_status(l.id, period)
-                    status = _code_to_ui(_v(l.status), LOAN_STATUS_KEYS)
+                    st = self._loan.get_month_status(loan.id, period)
+                    status = _code_to_ui(_v(loan.status), LOAN_STATUS_KEYS)
 
                     self._view.loan_tree.insert(
                         "",
                         "end",
-                        iid=str(l.id),
+                        iid=str(loan.id),
                         values=(
-                            l.name,
+                            loan.name,
                             status,
                             self._acc_label(eff_acc_id),
                             self._timing_to_ui(eff_timing),
@@ -564,7 +564,7 @@ class ExpensesPresenter:
                             _m(st.get("open_after")),
                         ),
                     )
-                    inserted_loan_ids.add(int(l.id))
+                    inserted_loan_ids.add(int(loan.id))
 
             # restore selection
             if sel_loan_before and sel_loan_before in inserted_loan_ids:

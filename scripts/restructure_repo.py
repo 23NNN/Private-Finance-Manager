@@ -8,7 +8,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable
 
-
 INTERNAL_TOPLEVEL = ("application", "config", "domain", "infrastructure", "ui")
 
 

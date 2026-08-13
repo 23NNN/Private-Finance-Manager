@@ -23,31 +23,16 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -e .[dev]
 
-      # Ruff only runs against files touched by this change. The repo carries
-      # pre-existing lint debt (~780 findings, mostly line-length, unrelated to
-      # any single change) that is out of scope to fix in one pass. Scoping to
-      # the diff enforces the standard on new/changed code without blocking on
-      # legacy files. See CLAUDE.md "Open Issues" for the tracked cleanup.
-      - name: Determine changed Python files
-        id: changed
+      # Full-repo check as of Zyklus 3 (chore/ruff-legacy-cleanup): all pre-existing
+      # findings except E501 (line-too-long) were fixed or annotated. E501 remains
+      # ignored repo-wide until Zyklus 4 does the line-length reflow. src/security/
+      # is excluded because that path is AI-edit-locked (see CLAUDE.md, .claude/
+      # settings.json permissions.deny) -- its handful of remaining findings need a
+      # manual pass by a human maintainer. Once both are cleared, drop --ignore E501
+      # and --exclude src/security to get the full, unscoped `ruff check .`.
+      - name: Ruff
         shell: bash
-        run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            BASE="${{ github.event.pull_request.base.sha }}"
-          else
-            BASE="${{ github.event.before }}"
-          fi
-          if [ -z "$BASE" ] || ! git cat-file -e "$BASE" 2>/dev/null; then
-            FILES=""
-          else
-            FILES=$(git diff --name-only --diff-filter=ACMR "$BASE" "${{ github.sha }}" -- '*.py' | tr '\n' ' ')
-          fi
-          echo "files=$FILES" >> "$GITHUB_OUTPUT"
-
-      - name: Ruff (changed files only)
-        if: steps.changed.outputs.files != ''
-        shell: bash
-        run: ruff check ${{ steps.changed.outputs.files }}
+        run: ruff check . --exclude src/security --ignore E501
 
       - name: Pytest
         run: pytest -q

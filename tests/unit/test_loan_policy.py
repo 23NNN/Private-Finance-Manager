@@ -1,4 +1,5 @@
 from decimal import Decimal
+
 from src.domain.policies.loan_policy import compute_month_status
 
 

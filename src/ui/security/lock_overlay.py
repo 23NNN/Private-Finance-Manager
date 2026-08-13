@@ -2,8 +2,8 @@
 from __future__ import annotations
 
 import tkinter as tk
-from tkinter import ttk
 from pathlib import Path
+from tkinter import ttk
 
 from src.security.security_config import load_security_config, verify_pin
 from src.ui.common.i18n import tr

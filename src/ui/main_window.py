@@ -3,47 +3,44 @@ from __future__ import annotations
 
 import logging
 import threading
-import traceback
 import tkinter as tk
-from queue import Queue, Empty
-from tkinter import ttk, filedialog, messagebox
+import traceback
+from queue import Empty, Queue
+from tkinter import filedialog, messagebox, ttk
 
 import customtkinter as ctk
 
-from src.ui.common.import_report_dialog import ImportReportDialog
-from src.ui.common.dataset_dialog import DatasetDialog
-from src.ui.common.error_dialog import show_error, show_warning
-from src.ui.common.scroll_area import ScrollArea
-from src.ui.common.i18n import tr, trf, get_i18n
-from src.ui.common.ctk_theme import apply_for_mode
-
-ftrf = trf  # alias used in this module
-
-from src.config.settings import get_settings
-from src.infrastructure.db.healthcheck import run_healthcheck, format_report
-
 from src.application.services.account_service import AccountService
+from src.application.services.backup_service import BackupService
 from src.application.services.employer_service import EmployerService
 from src.application.services.expense_service import ExpenseService
 from src.application.services.export_service import ExportService
-from src.application.services.backup_service import BackupService
-from src.application.services.security_service import SecurityService
-from src.ui.security.mode_dialog import SecurityModeDialog
-from src.ui.security.lock_overlay import LockOverlay
 from src.application.services.import_service import ImportService
 from src.application.services.income_service import IncomeService
 from src.application.services.loan_service import LoanService
 from src.application.services.overview_service import OverviewService
 from src.application.services.reference_data_service import ReferenceDataService
-
-from src.ui.overview.view import OverviewView
-from src.ui.overview.presenter import OverviewPresenter
-from src.ui.income.view import IncomeView
-from src.ui.income.presenter import IncomePresenter
-from src.ui.expenses.view import ExpensesView
-from src.ui.expenses.presenter import ExpensesPresenter
-from src.ui.accounts.view import AccountsView
+from src.application.services.security_service import SecurityService
+from src.config.settings import get_settings
+from src.infrastructure.db.healthcheck import format_report, run_healthcheck
 from src.ui.accounts.presenter import AccountsPresenter
+from src.ui.accounts.view import AccountsView
+from src.ui.common.ctk_theme import apply_for_mode
+from src.ui.common.dataset_dialog import DatasetDialog
+from src.ui.common.error_dialog import show_error, show_warning
+from src.ui.common.i18n import get_i18n, tr, trf
+from src.ui.common.import_report_dialog import ImportReportDialog
+from src.ui.common.scroll_area import ScrollArea
+from src.ui.expenses.presenter import ExpensesPresenter
+from src.ui.expenses.view import ExpensesView
+from src.ui.income.presenter import IncomePresenter
+from src.ui.income.view import IncomeView
+from src.ui.overview.presenter import OverviewPresenter
+from src.ui.overview.view import OverviewView
+from src.ui.security.lock_overlay import LockOverlay
+from src.ui.security.mode_dialog import SecurityModeDialog
+
+ftrf = trf  # alias used in this module
 
 logger = logging.getLogger(__name__)
 
@@ -210,8 +207,8 @@ class MainWindow:
         ctk.set_appearance_mode(mode)
         apply_for_mode(self.root, mode)
         try:
-            from src.infrastructure.unit_of_work import UnitOfWork
             from src.infrastructure.repositories.app_settings import AppSettingRepository
+            from src.infrastructure.unit_of_work import UnitOfWork
             with UnitOfWork() as uow:
                 AppSettingRepository(uow.session).set("ui.appearance_mode", mode)
                 uow.commit()

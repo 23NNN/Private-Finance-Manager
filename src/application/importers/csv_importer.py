@@ -5,8 +5,8 @@ from pathlib import Path
 
 from src.application.importers.utils import as_bool, as_str
 from src.infrastructure.db.orm_models import Account
-from src.infrastructure.unit_of_work import UnitOfWork
 from src.infrastructure.io.csv_reader import read_csv
+from src.infrastructure.unit_of_work import UnitOfWork
 
 logger = logging.getLogger(__name__)
 

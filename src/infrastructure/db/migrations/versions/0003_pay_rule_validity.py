@@ -1,8 +1,8 @@
 # infrastructure/db/migrations/versions/0003_pay_rule_validity.py
 from __future__ import annotations
 
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
 revision = "0003_pay_rule_validity"
 down_revision = "0002_pay_rule_notes"

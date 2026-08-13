@@ -1,4 +1,5 @@
 from decimal import Decimal
+
 from src.domain.policies.savings_policy import calc_savings_per_employer
 
 

@@ -2,12 +2,12 @@
 from __future__ import annotations
 
 from logging.config import fileConfig
+
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 
 from src.config.settings import get_settings
 from src.infrastructure.db.orm_models import Base  # noqa
-
 
 config = context.config
 if config.config_file_name is not None:

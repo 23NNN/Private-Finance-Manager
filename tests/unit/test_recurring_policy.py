@@ -1,6 +1,7 @@
 from decimal import Decimal
+
 from src.domain.models.period import Period
-from src.domain.policies.recurring_policy import allocated_amount, is_due_in_period, ViewMode
+from src.domain.policies.recurring_policy import ViewMode, allocated_amount, is_due_in_period
 
 
 def test_due_quarterly_anchor_month():

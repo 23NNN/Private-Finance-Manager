@@ -7,8 +7,8 @@ from tkinter import ttk
 import customtkinter as ctk
 
 from src.ui.common.controls import create_treeview_with_scrollbars
-from src.ui.common.period_selector import PeriodSelector
 from src.ui.common.i18n import tr
+from src.ui.common.period_selector import PeriodSelector
 
 
 class IncomeView(ttk.Frame):

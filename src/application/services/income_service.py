@@ -9,12 +9,13 @@ from src.application.dto.employers import EmployerDTO, PayRuleDTO
 from src.application.dto.incomes import IncomeFixedDTO, IncomeHourlyDTO, IncomeSpecialDTO
 from src.domain.policies.hourly_pay_policy import PayRule, calc_hourly_income
 from src.infrastructure.db.orm_models import (
-    Employer,
     IncomeFixed,
     IncomeHourly,
     IncomeSpecial,
-    PayRule as PayRuleORM,
     PayoutTiming,
+)
+from src.infrastructure.db.orm_models import (
+    PayRule as PayRuleORM,
 )
 from src.infrastructure.unit_of_work import UnitOfWork
 

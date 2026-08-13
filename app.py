@@ -6,13 +6,12 @@ import os
 import sys
 from pathlib import Path
 
-
 ROOT_DIR = Path(__file__).resolve().parent
 # For 'import src....' the parent of "src/" must be on sys.path (i.e. repo root).
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
-from src.config.settings import get_settings
+from src.config.settings import get_settings  # noqa: E402 -- must follow sys.path.insert above
 
 
 def _parse_args(argv: list[str]) -> argparse.Namespace:
@@ -63,12 +62,11 @@ def main(argv: list[str]) -> int:
     ctk.set_appearance_mode(appearance_mode)
     ctk.set_default_color_theme("blue")
 
-    from src.infrastructure.logging_setup import configure_logging
     from src.infrastructure.db.engine import init_engine
     from src.infrastructure.db.migrations.runner import upgrade_db_if_possible
-    from src.ui.main_window import run_app
-
+    from src.infrastructure.logging_setup import configure_logging
     from src.security.bootstrap import bootstrap_security_and_db
+    from src.ui.main_window import run_app
 
     configure_logging(settings.log_path())
 
