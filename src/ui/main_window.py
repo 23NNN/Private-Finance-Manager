@@ -10,12 +10,6 @@ from tkinter import filedialog, messagebox, ttk
 
 import customtkinter as ctk
 
-from src.ui.common.ctk_theme import apply_for_mode
-from src.ui.common.dataset_dialog import DatasetDialog
-from src.ui.common.error_dialog import show_error, show_warning
-from src.ui.common.i18n import get_i18n, tr, trf
-from src.ui.common.import_report_dialog import ImportReportDialog
-from src.ui.common.scroll_area import ScrollArea
 from src.application.services.account_service import AccountService
 from src.application.services.backup_service import BackupService
 from src.application.services.employer_service import EmployerService
@@ -31,6 +25,12 @@ from src.config.settings import get_settings
 from src.infrastructure.db.healthcheck import format_report, run_healthcheck
 from src.ui.accounts.presenter import AccountsPresenter
 from src.ui.accounts.view import AccountsView
+from src.ui.common.ctk_theme import apply_for_mode
+from src.ui.common.dataset_dialog import DatasetDialog
+from src.ui.common.error_dialog import show_error, show_warning
+from src.ui.common.i18n import get_i18n, tr, trf
+from src.ui.common.import_report_dialog import ImportReportDialog
+from src.ui.common.scroll_area import ScrollArea
 from src.ui.expenses.presenter import ExpensesPresenter
 from src.ui.expenses.view import ExpensesView
 from src.ui.income.presenter import IncomePresenter
