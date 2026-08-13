@@ -454,9 +454,83 @@ def test_import_expense_variable_round_trips_with_export(tmp_path: Path):
         assert row.account.label == "GIRO"
 
 
+def test_import_loans_creates_and_then_updates(tmp_path: Path):
+    svc = ImportService()
+
+    path = _write_csv(
+        tmp_path,
+        "loans.csv",
+        ["name", "start_date", "principal_initial", "annual_interest_rate", "regular_payment", "status"],
+        [["Auto Kredit", "2026-01-01", "15000.00", "3.5000", "250.00", "ACTIVE"]],
+    )
+    result = svc.import_csv(path, "loans")
+    assert result["status"] == "ok"
+    assert result["inserted"] == 1
+    assert result["updated"] == 0
+
+    with UnitOfWork() as uow:
+        loan = uow.loans.get_by_name("Auto Kredit")
+        assert loan is not None
+        assert loan.principal_initial == Decimal("15000.00")
+        assert loan.annual_interest_rate == Decimal("3.5000")
+        assert loan.status.value == "ACTIVE"
+        assert uow.accounts.get(loan.account_id) is not None  # required FK, auto-created via DEFAULT fallback
+
+    path2 = _write_csv(
+        tmp_path,
+        "loans2.csv",
+        ["name", "start_date", "principal_initial", "annual_interest_rate", "regular_payment", "status"],
+        [["Auto Kredit", "2026-01-01", "14000.00", "3.5000", "250.00", "CLOSED"]],
+    )
+    result2 = svc.import_csv(path2, "loans")
+    assert result2["inserted"] == 0
+    assert result2["updated"] == 1
+
+    with UnitOfWork() as uow:
+        loan = uow.loans.get_by_name("Auto Kredit")
+        assert loan.principal_initial == Decimal("14000.00")
+        assert loan.status.value == "CLOSED"
+
+
+def test_import_loans_round_trips_with_export(tmp_path: Path):
+    svc = ImportService()
+
+    path = _write_csv(
+        tmp_path,
+        "loans.csv",
+        [
+            "name",
+            "start_date",
+            "principal_initial",
+            "annual_interest_rate",
+            "regular_payment",
+            "payment_timing",
+            "account_label",
+            "status",
+        ],
+        [["RoundTrip Kredit", "2026-02-01", "8000.00", "2.1000", "150.00", "BEGINNING", "GIRO", "ACTIVE"]],
+    )
+    svc.import_csv(path, "loans")
+
+    export_path = str(tmp_path / "loans_export.csv")
+    ExportService().export_csv(export_path, "loans")
+
+    result = svc.import_csv(export_path, "loans")
+    assert result["status"] == "ok"
+    assert result["inserted"] == 0
+    assert result["updated"] == 1
+
+    with UnitOfWork() as uow:
+        loan = uow.loans.get_by_name("RoundTrip Kredit")
+        assert loan.principal_initial == Decimal("8000.00")
+        assert loan.annual_interest_rate == Decimal("2.1000")
+        assert loan.payment_timing == PayoutTiming.BEGINNING
+        assert uow.accounts.get(loan.account_id).label == "GIRO"
+
+
 @pytest.mark.parametrize(
     "dataset",
-    ["loans", "loan_events"],
+    ["loan_events"],
 )
 def test_import_csv_rejects_unsupported_datasets(tmp_path: Path, dataset: str):
     svc = ImportService()

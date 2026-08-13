@@ -11,7 +11,7 @@ from typing import Any
 
 from sqlalchemy import select
 
-from src.application.validators.parsers import parse_bool, parse_decimal, parse_int, parse_month
+from src.application.validators.parsers import parse_bool, parse_date, parse_decimal, parse_int, parse_month
 from src.infrastructure.db.orm_models import (
     Account,
     AllocationOverride,
@@ -23,6 +23,8 @@ from src.infrastructure.db.orm_models import (
     ImportRun,
     IncomeFixed,
     IncomeHourly,
+    Loan,
+    LoanStatus,
     PayBucket,
     PayoutTiming,
     PayRule,
@@ -183,6 +185,15 @@ def _variable_status_from_any(value: Any) -> VariableStatus:
     return VariableStatus(_norm(value).upper())
 
 
+def _loan_status_from_any(value: Any) -> LoanStatus:
+    s = _norm(value).lower()
+    if not s or s in {"active", "aktiv"}:
+        return LoanStatus.ACTIVE
+    if s in {"closed", "geschlossen"}:
+        return LoanStatus.CLOSED
+    return LoanStatus(_norm(value).upper())
+
+
 def _ensure_default_categories(uow: UnitOfWork) -> None:
     existing = {c.name: c for c in uow.expense_categories.list_all()}
 
@@ -216,7 +227,6 @@ class ImportService:
     # dataset, not a bug fix — rejected explicitly instead of silently
     # producing wrong or crashing imports. Use the Excel import instead.
     _UNSUPPORTED_CSV_DATASETS = {
-        "loans",
         "loan_events",
     }
 
@@ -260,6 +270,7 @@ class ImportService:
             acc_by_label = {a.label: a for a in uow.accounts.list_all()}
             emp_by_name = {e.name: e for e in uow.employers.list_all()}
             cat_by_name = {c.name: c for c in uow.expense_categories.list_all()}
+            loan_by_name = {ln.name: ln for ln in uow.loans.list_all()}
 
             def ensure_employer(name: str) -> Employer:
                 nm = (name or "").strip() or "Arbeitgeber"
@@ -655,6 +666,56 @@ class ImportService:
                         )
                         inserted += 1
 
+                    elif dataset == "loans":
+                        name = _norm(_get(r, "name", "kredit"))
+                        if not name:
+                            issues.append(
+                                ImportIssue(dataset, row_idx, "name", "", "Required field missing – row skipped.")
+                            )
+                            skipped += 1
+                            continue
+
+                        start_date = parse_date(_get(r, "start_date", "startdatum"))
+                        principal_initial = parse_decimal(
+                            _get(r, "principal_initial", "startbetrag"), default=Decimal("0")
+                        )
+                        annual_interest_rate = parse_decimal(
+                            _get(r, "annual_interest_rate", "zinssatz"), default=Decimal("0")
+                        )
+                        regular_payment = parse_decimal(_get(r, "regular_payment", "rate"), default=Decimal("0"))
+                        payment_timing = _payout_timing_from_any(_get(r, "payment_timing", "auszahlung"))
+                        status = _loan_status_from_any(_get(r, "status"))
+                        acc_label = _norm(_get(r, "account_label", "konto"))
+                        account = ensure_account(acc_label)
+                        notes = _norm(_get(r, "notes", "notiz")) or None
+
+                        existing = loan_by_name.get(name)
+                        if existing:
+                            existing.start_date = start_date
+                            existing.principal_initial = principal_initial
+                            existing.annual_interest_rate = annual_interest_rate
+                            existing.regular_payment = regular_payment
+                            existing.payment_timing = payment_timing
+                            existing.account_id = account.id
+                            existing.status = status
+                            existing.notes = notes
+                            updated += 1
+                        else:
+                            obj = Loan(
+                                name=name,
+                                start_date=start_date,
+                                principal_initial=principal_initial,
+                                annual_interest_rate=annual_interest_rate,
+                                regular_payment=regular_payment,
+                                payment_timing=payment_timing,
+                                account_id=account.id,
+                                status=status,
+                                notes=notes,
+                            )
+                            uow.loans.upsert(obj)
+                            loan_by_name[name] = obj
+                            inserted += 1
+
                     else:
                         raise ValueError(f"Nicht implementiert: {dataset}")
 
@@ -808,6 +869,24 @@ class ImportService:
                 "konto",
                 "pay_bucket",
                 "zahlungszeitpunkt",
+            }
+
+        if dataset == "loans":
+            return base | {
+                "kredit",
+                "start_date",
+                "startdatum",
+                "principal_initial",
+                "startbetrag",
+                "annual_interest_rate",
+                "zinssatz",
+                "regular_payment",
+                "rate",
+                "payment_timing",
+                "auszahlung",
+                "account_label",
+                "konto",
+                "status",
             }
 
         return base
