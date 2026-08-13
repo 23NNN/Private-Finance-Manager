@@ -10,6 +10,7 @@ types still compatible with the schema (accounts, employers, pay_rules,
 categories); the other 6 are now explicitly rejected instead of silently
 crashing or corrupting data.
 """
+
 from __future__ import annotations
 
 from decimal import Decimal
@@ -17,7 +18,9 @@ from pathlib import Path
 
 import pytest
 
+from src.application.services.export_service import ExportService
 from src.application.services.import_service import ImportService
+from src.domain.models.period import Period
 from src.infrastructure.db.engine import dispose_engine, get_engine, init_engine
 from src.infrastructure.db.orm_models import Base, PayoutTiming
 from src.infrastructure.unit_of_work import UnitOfWork
@@ -42,7 +45,8 @@ def test_import_accounts_creates_and_then_updates(tmp_path: Path):
     svc = ImportService()
 
     path = _write_csv(
-        tmp_path, "accounts.csv",
+        tmp_path,
+        "accounts.csv",
         ["label", "account_name", "bank_name", "role_income", "role_debit"],
         [["GIRO", "Girokonto", "Sparkasse", "true", "true"]],
     )
@@ -57,7 +61,8 @@ def test_import_accounts_creates_and_then_updates(tmp_path: Path):
         assert acc.bank_name == "Sparkasse"
 
     path2 = _write_csv(
-        tmp_path, "accounts2.csv",
+        tmp_path,
+        "accounts2.csv",
         ["label", "account_name", "bank_name", "role_income", "role_debit"],
         [["GIRO", "Girokonto", "Neue Bank", "true", "false"]],
     )
@@ -96,7 +101,8 @@ def test_import_pay_rules_auto_creates_employer(tmp_path: Path):
     svc = ImportService()
 
     path = _write_csv(
-        tmp_path, "pay_rules.csv",
+        tmp_path,
+        "pay_rules.csv",
         ["employer", "rule_type", "unit", "value"],
         [["NewCo", "HOURLY_WAGE", "EUR_PER_HOUR", "20.00"]],
     )
@@ -136,9 +142,89 @@ def test_import_csv_skips_already_imported_file(tmp_path: Path):
     assert second["reason"] == "already_imported"
 
 
+def test_import_income_fixed_creates_and_then_updates(tmp_path: Path):
+    svc = ImportService()
+
+    path = _write_csv(
+        tmp_path,
+        "income_fixed.csv",
+        ["employer_name", "year", "month", "base_amount", "special_amount", "actual_amount", "payout_timing"],
+        [["Firma Beispiel", "2026", "3", "3000.00", "0.00", "0.00", "MID"]],
+    )
+    result = svc.import_csv(path, "income_fixed")
+    assert result["status"] == "ok"
+    assert result["inserted"] == 1
+    assert result["updated"] == 0
+
+    with UnitOfWork() as uow:
+        emp = uow.employers.get_by_name("Firma Beispiel")
+        assert emp is not None
+        row = uow.income_fixed.get_by_emp_period(emp.id, 2026, 3)
+        assert row is not None
+        assert row.base_amount == Decimal("3000.00")
+        assert row.calc_amount == Decimal("3000.00")
+        assert row.payout_timing == PayoutTiming.MID
+
+    path2 = _write_csv(
+        tmp_path,
+        "income_fixed2.csv",
+        ["employer_name", "year", "month", "base_amount", "special_amount", "actual_amount", "payout_timing"],
+        [["Firma Beispiel", "2026", "3", "3200.00", "100.00", "3300.00", "BEGINNING"]],
+    )
+    result2 = svc.import_csv(path2, "income_fixed")
+    assert result2["inserted"] == 0
+    assert result2["updated"] == 1
+
+    with UnitOfWork() as uow:
+        emp = uow.employers.get_by_name("Firma Beispiel")
+        row = uow.income_fixed.get_by_emp_period(emp.id, 2026, 3)
+        assert row.base_amount == Decimal("3200.00")
+        assert row.calc_amount == Decimal("3300.00")
+        assert row.payout_timing == PayoutTiming.BEGINNING
+
+
+def test_import_income_fixed_round_trips_with_export(tmp_path: Path):
+    svc = ImportService()
+
+    path = _write_csv(
+        tmp_path,
+        "income_fixed.csv",
+        [
+            "employer_name",
+            "year",
+            "month",
+            "base_amount",
+            "special_amount",
+            "actual_amount",
+            "payout_timing",
+            "account_label",
+        ],
+        [["RoundTrip Co", "2026", "5", "2500.00", "50.00", "2550.00", "BEGINNING", "GIRO"]],
+    )
+    svc.import_csv(path, "income_fixed")
+
+    export_path = str(tmp_path / "income_fixed_export.csv")
+    ExportService().export_csv(export_path, "income_fixed", period=Period(2026, 5))
+
+    result = svc.import_csv(export_path, "income_fixed")
+    assert result["status"] == "ok"
+    assert result["inserted"] == 0
+    assert result["updated"] == 1
+
+    with UnitOfWork() as uow:
+        emp = uow.employers.get_by_name("RoundTrip Co")
+        row = uow.income_fixed.get_by_emp_period(emp.id, 2026, 5)
+        assert row.base_amount == Decimal("2500.00")
+        assert row.special_amount == Decimal("50.00")
+        assert row.actual_amount == Decimal("2550.00")
+        assert row.payout_timing == PayoutTiming.BEGINNING
+        acc = uow.accounts.get(row.account_id)
+        assert acc.label == "GIRO"
+
+
 @pytest.mark.parametrize(
     "dataset",
-    ["income_fixed", "income_hourly", "expense_recurring", "expense_variable", "loans", "loan_events"],
+    ["income_hourly", "expense_recurring", "expense_variable", "loans", "loan_events"],
 )
 def test_import_csv_rejects_unsupported_datasets(tmp_path: Path, dataset: str):
     svc = ImportService()

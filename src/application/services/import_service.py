@@ -11,7 +11,7 @@ from typing import Any
 
 from sqlalchemy import select
 
-from src.application.validators.parsers import parse_bool, parse_decimal
+from src.application.validators.parsers import parse_bool, parse_decimal, parse_int, parse_month
 from src.infrastructure.db.orm_models import (
     Account,
     AllocationOverride,
@@ -19,6 +19,7 @@ from src.infrastructure.db.orm_models import (
     ExpenseCategory,
     ExpenseGroup,
     ImportRun,
+    IncomeFixed,
     PayoutTiming,
     PayRule,
     PayRuleType,
@@ -178,7 +179,6 @@ class ImportService:
     # dataset, not a bug fix — rejected explicitly instead of silently
     # producing wrong or crashing imports. Use the Excel import instead.
     _UNSUPPORTED_CSV_DATASETS = {
-        "income_fixed",
         "income_hourly",
         "expense_recurring",
         "expense_variable",
@@ -234,6 +234,21 @@ class ImportService:
                 obj = Employer(name=nm, payout_timing=PayoutTiming.MID)
                 uow.employers.upsert(obj)
                 emp_by_name[nm] = obj
+                return obj
+
+            def ensure_account(label: str) -> Account:
+                lbl = (label or "").strip() or "DEFAULT"
+                if lbl in acc_by_label:
+                    return acc_by_label[lbl]
+                obj = Account(
+                    account_name=lbl,
+                    label=lbl,
+                    role_income=True,
+                    role_debit=True,
+                    notes="Auto-created by CSV import",
+                )
+                uow.accounts.upsert(obj)
+                acc_by_label[lbl] = obj
                 return obj
 
             def find_pay_rule(
@@ -397,6 +412,61 @@ class ImportService:
                             cat_by_name[name] = obj
                             inserted += 1
 
+                    elif dataset == "income_fixed":
+                        emp_name = _norm(_get(r, "employer_name", "employer", "arbeitgeber"))
+                        if not emp_name:
+                            issues.append(
+                                ImportIssue(
+                                    dataset,
+                                    row_idx,
+                                    "employer_name",
+                                    "",
+                                    "Required field missing – row skipped.",
+                                )
+                            )
+                            skipped += 1
+                            continue
+                        emp = ensure_employer(emp_name)
+
+                        year = parse_int(_get(r, "year", "jahr"))
+                        month = parse_month(_get(r, "month", "monat"))
+
+                        base_amount = parse_decimal(_get(r, "base_amount", "grundbetrag"), default=Decimal("0"))
+                        special_amount = parse_decimal(_get(r, "special_amount", "sonder"), default=Decimal("0"))
+                        actual_amount = parse_decimal(_get(r, "actual_amount", "ist"), default=Decimal("0"))
+                        payout_timing = _payout_timing_from_any(_get(r, "payout_timing", "auszahlung"))
+
+                        acc_label = _norm(_get(r, "account_label", "konto"))
+                        account = ensure_account(acc_label) if acc_label else None
+                        notes = _norm(_get(r, "notes", "notiz")) or None
+
+                        existing = uow.income_fixed.get_by_emp_period(emp.id, year, month)
+                        if existing:
+                            existing.base_amount = base_amount
+                            existing.special_amount = special_amount
+                            existing.calc_amount = base_amount + special_amount
+                            existing.actual_amount = actual_amount
+                            existing.payout_timing = payout_timing
+                            existing.account_id = account.id if account else None
+                            existing.notes = notes
+                            updated += 1
+                        else:
+                            uow.income_fixed.upsert(
+                                IncomeFixed(
+                                    employer_id=emp.id,
+                                    year=year,
+                                    month=month,
+                                    base_amount=base_amount,
+                                    special_amount=special_amount,
+                                    calc_amount=base_amount + special_amount,
+                                    actual_amount=actual_amount,
+                                    payout_timing=payout_timing,
+                                    account_id=account.id if account else None,
+                                    notes=notes,
+                                )
+                            )
+                            inserted += 1
+
                     else:
                         raise ValueError(f"Nicht implementiert: {dataset}")
 
@@ -460,5 +530,26 @@ class ImportService:
 
         if dataset == "categories":
             return base | {"group", "gruppe", "kategorie"}
+
+        if dataset == "income_fixed":
+            return base | {
+                "employer_name",
+                "employer",
+                "arbeitgeber",
+                "year",
+                "jahr",
+                "month",
+                "monat",
+                "base_amount",
+                "grundbetrag",
+                "special_amount",
+                "sonder",
+                "actual_amount",
+                "ist",
+                "payout_timing",
+                "auszahlung",
+                "account_label",
+                "konto",
+            }
 
         return base
