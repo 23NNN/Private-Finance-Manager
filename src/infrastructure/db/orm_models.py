@@ -36,12 +36,12 @@ PaymentTiming = PayoutTiming
 
 
 class PayRuleType(str, enum.Enum):
-    HOURLY_WAGE = "HOURLY_WAGE"       # Hourly wage
-    SALARY = "SALARY"                # Fixed salary
-    NIGHT = "NIGHT"                  # Night surcharge
-    SUNDAY = "SUNDAY"                # Sunday surcharge
-    HOLIDAY = "HOLIDAY"              # Holiday surcharge
-    OVERTIME = "OVERTIME"            # Overtime
+    HOURLY_WAGE = "HOURLY_WAGE"  # Hourly wage
+    SALARY = "SALARY"  # Fixed salary
+    NIGHT = "NIGHT"  # Night surcharge
+    SUNDAY = "SUNDAY"  # Sunday surcharge
+    HOLIDAY = "HOLIDAY"  # Holiday surcharge
+    OVERTIME = "OVERTIME"  # Overtime
 
 
 class PayRuleUnit(str, enum.Enum):
@@ -124,7 +124,9 @@ class Employer(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     name: Mapped[str] = mapped_column(String(200), nullable=False, unique=True)
-    payout_timing: Mapped[PayoutTiming] = mapped_column(Enum(PayoutTiming, name="employer_payout_timing"), nullable=False)
+    payout_timing: Mapped[PayoutTiming] = mapped_column(
+        Enum(PayoutTiming, name="employer_payout_timing"), nullable=False
+    )
     default_account_id: Mapped[int | None] = mapped_column(ForeignKey("account.id"), nullable=True, index=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
 
@@ -213,8 +215,6 @@ class IncomeHourly(Base):
     account: Mapped[Account | None] = relationship("Account")
 
 
-
-
 class IncomeSpecial(Base):
     __tablename__ = "income_special"
     __table_args__ = (Index("ix_income_special_year_month", "year", "month"),)
@@ -232,6 +232,7 @@ class IncomeSpecial(Base):
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     account: Mapped[Account | None] = relationship("Account")
+
 
 class ExpenseCategory(Base):
     __tablename__ = "expense_category"
@@ -309,7 +310,9 @@ class Loan(Base):
     payment_timing: Mapped[PayoutTiming] = mapped_column(Enum(PayoutTiming, name="loan_payment_timing"), nullable=False)
     account_id: Mapped[int] = mapped_column(ForeignKey("account.id"), index=True)
 
-    status: Mapped[LoanStatus] = mapped_column(Enum(LoanStatus, name="loan_status"), nullable=False, default=LoanStatus.ACTIVE)
+    status: Mapped[LoanStatus] = mapped_column(
+        Enum(LoanStatus, name="loan_status"), nullable=False, default=LoanStatus.ACTIVE
+    )
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     events: Mapped[list["LoanEvent"]] = relationship("LoanEvent", back_populates="loan")

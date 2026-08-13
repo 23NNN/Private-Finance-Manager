@@ -36,7 +36,11 @@ def _rewrite_import_line(line: str) -> str:
     if stripped.startswith("import "):
         # can be "import ui.main" or "import ui" or "import ui.main as m"
         for mod in INTERNAL_TOPLEVEL:
-            if stripped.startswith(f"import {mod}.") or stripped.startswith(f"import {mod} " ) or stripped == f"import {mod}\n":
+            if (
+                stripped.startswith(f"import {mod}.")
+                or stripped.startswith(f"import {mod} ")
+                or stripped == f"import {mod}\n"
+            ):
                 return indent + stripped.replace(f"import {mod}", f"import src.{mod}", 1)
 
     return line

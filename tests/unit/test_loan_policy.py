@@ -6,7 +6,13 @@ from src.domain.policies.loan_policy import compute_month_status
 def test_loan_month_status_no_interest():
     events = [
         {"event_type": "PAYMENT", "year": 2026, "month": 1, "amount": Decimal("100.00"), "new_regular_payment": None},
-        {"event_type": "EXTRA_PAYMENT", "year": 2026, "month": 1, "amount": Decimal("50.00"), "new_regular_payment": None},
+        {
+            "event_type": "EXTRA_PAYMENT",
+            "year": 2026,
+            "month": 1,
+            "amount": Decimal("50.00"),
+            "new_regular_payment": None,
+        },
     ]
     st = compute_month_status(
         principal_initial=Decimal("1000.00"),
