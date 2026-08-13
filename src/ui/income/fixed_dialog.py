@@ -63,7 +63,9 @@ class FixedIncomeDialog(tk.Toplevel):
         self._special = tk.StringVar(value=str(initial.get("special_amount", "0.00")))
         self._calc = tk.StringVar(value="0,00")
         self._actual = tk.StringVar(value=str(initial.get("actual_amount", "0.00")))
-        self._payout = tk.StringVar(value=str(initial.get("payout_timing", payout_values[0] if payout_values else tr("timing.mid"))))
+        self._payout = tk.StringVar(
+            value=str(initial.get("payout_timing", payout_values[0] if payout_values else tr("timing.mid")))
+        )
         self._account = tk.StringVar(value=str(initial.get("account", "")))
         self._notes = tk.StringVar(value=str(initial.get("notes", "")))
 
@@ -73,7 +75,9 @@ class FixedIncomeDialog(tk.Toplevel):
         self.rowconfigure(0, weight=1)
 
         ttk.Label(root, text=tr("income.fixed.field.employer")).grid(row=0, column=0, sticky="w")
-        self._cb_emp = ttk.Combobox(root, state="readonly", width=42, values=employer_values, textvariable=self._employer)
+        self._cb_emp = ttk.Combobox(
+            root, state="readonly", width=42, values=employer_values, textvariable=self._employer
+        )
         self._cb_emp.grid(row=0, column=1, sticky="ew", padx=(8, 0), pady=2)
 
         ttk.Label(root, text=tr("income.fixed.field.base_amount")).grid(row=1, column=0, sticky="w")
@@ -92,11 +96,15 @@ class FixedIncomeDialog(tk.Toplevel):
         self._ent_actual.grid(row=4, column=1, sticky="w", padx=(8, 0), pady=2)
 
         ttk.Label(root, text=tr("income.fixed.field.payout")).grid(row=5, column=0, sticky="w")
-        self._cb_payout = ttk.Combobox(root, state="readonly", width=12, values=payout_values, textvariable=self._payout)
+        self._cb_payout = ttk.Combobox(
+            root, state="readonly", width=12, values=payout_values, textvariable=self._payout
+        )
         self._cb_payout.grid(row=5, column=1, sticky="w", padx=(8, 0), pady=2)
 
         ttk.Label(root, text=tr("income.fixed.field.account")).grid(row=6, column=0, sticky="w")
-        self._cb_account = ttk.Combobox(root, state="readonly", width=42, values=account_values, textvariable=self._account)
+        self._cb_account = ttk.Combobox(
+            root, state="readonly", width=42, values=account_values, textvariable=self._account
+        )
         self._cb_account.grid(row=6, column=1, sticky="ew", padx=(8, 0), pady=2)
 
         ttk.Label(root, text=tr("income.fixed.field.notes")).grid(row=7, column=0, sticky="w")

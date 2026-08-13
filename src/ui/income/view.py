@@ -271,7 +271,11 @@ class IncomeView(ttk.Frame):
         self.emp_reset_btn.pack(side="right", padx=8, pady=4)
 
         cols_e = ["name", "timing", "default_account"]
-        heads_e = {"name": tr("income.col.name"), "timing": tr("income.col.payout"), "default_account": tr("income.col.default_account")}
+        heads_e = {
+            "name": tr("income.col.name"),
+            "timing": tr("income.col.payout"),
+            "default_account": tr("income.col.default_account"),
+        }
         self.employer_tree, frame_e = create_treeview_with_scrollbars(
             self.tab_employers, columns=cols_e, headings=heads_e, height=8
         )
@@ -326,7 +330,11 @@ class IncomeView(ttk.Frame):
         self.delete_savings_rule_btn.pack(side="left", padx=(6, 0))
 
         cols_sr = ["percentage", "valid_from", "valid_to"]
-        heads_sr = {"percentage": tr("income.col.savings_rate"), "valid_from": tr("income.col.valid_from"), "valid_to": tr("income.col.valid_to")}
+        heads_sr = {
+            "percentage": tr("income.col.savings_rate"),
+            "valid_from": tr("income.col.valid_from"),
+            "valid_to": tr("income.col.valid_to"),
+        }
         self.savings_rules_tree, frame_sr = create_treeview_with_scrollbars(
             sav, columns=cols_sr, headings=heads_sr, height=5
         )
