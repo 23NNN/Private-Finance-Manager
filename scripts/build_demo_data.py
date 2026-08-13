@@ -1,7 +1,7 @@
 # scripts/build_demo_data.py
-from __future__ import annotations
-
 """Generate a fully populated demo database (dummy data) for the Finance Manager."""
+
+from __future__ import annotations
 
 import argparse
 import os

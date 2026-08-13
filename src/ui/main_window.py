@@ -16,9 +16,6 @@ from src.ui.common.error_dialog import show_error, show_warning
 from src.ui.common.i18n import get_i18n, tr, trf
 from src.ui.common.import_report_dialog import ImportReportDialog
 from src.ui.common.scroll_area import ScrollArea
-
-ftrf = trf  # alias used in this module
-
 from src.application.services.account_service import AccountService
 from src.application.services.backup_service import BackupService
 from src.application.services.employer_service import EmployerService
@@ -42,6 +39,8 @@ from src.ui.overview.presenter import OverviewPresenter
 from src.ui.overview.view import OverviewView
 from src.ui.security.lock_overlay import LockOverlay
 from src.ui.security.mode_dialog import SecurityModeDialog
+
+ftrf = trf  # alias used in this module
 
 logger = logging.getLogger(__name__)
 

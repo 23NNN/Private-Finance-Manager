@@ -1,6 +1,4 @@
 # scripts/i18n_audit.py
-from __future__ import annotations
-
 """Audit UI hardcoded strings (helper for migration to DB-backed i18n).
 
 This script scans src/ui/**/*.py for likely user-facing string literals and prints a report.
@@ -9,6 +7,8 @@ It does NOT modify code.
 Usage:
   python scripts/i18n_audit.py
 """
+
+from __future__ import annotations
 
 import ast
 import re
