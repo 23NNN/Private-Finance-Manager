@@ -222,9 +222,93 @@ def test_import_income_fixed_round_trips_with_export(tmp_path: Path):
         assert acc.label == "GIRO"
 
 
+def test_import_income_hourly_creates_and_then_updates(tmp_path: Path):
+    svc = ImportService()
+
+    path = _write_csv(
+        tmp_path,
+        "income_hourly.csv",
+        ["employer_name", "year", "month", "hours_normal", "night", "sunday", "holiday", "overtime"],
+        [["Firma Beispiel", "2026", "4", "160", "10", "0", "0", "5"]],
+    )
+    result = svc.import_csv(path, "income_hourly")
+    assert result["status"] == "ok"
+    assert result["inserted"] == 1
+    assert result["updated"] == 0
+
+    with UnitOfWork() as uow:
+        emp = uow.employers.get_by_name("Firma Beispiel")
+        assert emp is not None
+        row = uow.income_hourly.get_by_emp_period(emp.id, 2026, 4)
+        assert row is not None
+        assert row.hours_normal == Decimal("160")
+        assert row.night == Decimal("10")
+        assert row.overtime == Decimal("5")
+        assert row.calc_amount == Decimal("0.00")
+
+    path2 = _write_csv(
+        tmp_path,
+        "income_hourly2.csv",
+        ["employer_name", "year", "month", "hours_normal", "night", "sunday", "holiday", "overtime"],
+        [["Firma Beispiel", "2026", "4", "170", "12", "0", "0", "8"]],
+    )
+    result2 = svc.import_csv(path2, "income_hourly")
+    assert result2["inserted"] == 0
+    assert result2["updated"] == 1
+
+    with UnitOfWork() as uow:
+        emp = uow.employers.get_by_name("Firma Beispiel")
+        row = uow.income_hourly.get_by_emp_period(emp.id, 2026, 4)
+        assert row.hours_normal == Decimal("170")
+        assert row.overtime == Decimal("8")
+
+
+def test_import_income_hourly_round_trips_with_export(tmp_path: Path):
+    svc = ImportService()
+
+    path = _write_csv(
+        tmp_path,
+        "income_hourly.csv",
+        [
+            "employer_name",
+            "year",
+            "month",
+            "hours_normal",
+            "night",
+            "sunday",
+            "holiday",
+            "overtime",
+            "payout_timing",
+            "account_label",
+        ],
+        [["RoundTrip Co", "2026", "6", "150", "5", "2", "1", "3", "BEGINNING", "GIRO"]],
+    )
+    svc.import_csv(path, "income_hourly")
+
+    export_path = str(tmp_path / "income_hourly_export.csv")
+    ExportService().export_csv(export_path, "income_hourly", period=Period(2026, 6))
+
+    result = svc.import_csv(export_path, "income_hourly")
+    assert result["status"] == "ok"
+    assert result["inserted"] == 0
+    assert result["updated"] == 1
+
+    with UnitOfWork() as uow:
+        emp = uow.employers.get_by_name("RoundTrip Co")
+        row = uow.income_hourly.get_by_emp_period(emp.id, 2026, 6)
+        assert row.hours_normal == Decimal("150")
+        assert row.night == Decimal("5")
+        assert row.sunday == Decimal("2")
+        assert row.holiday == Decimal("1")
+        assert row.overtime == Decimal("3")
+        assert row.payout_timing == PayoutTiming.BEGINNING
+        acc = uow.accounts.get(row.account_id)
+        assert acc.label == "GIRO"
+
+
 @pytest.mark.parametrize(
     "dataset",
-    ["income_hourly", "expense_recurring", "expense_variable", "loans", "loan_events"],
+    ["expense_recurring", "expense_variable", "loans", "loan_events"],
 )
 def test_import_csv_rejects_unsupported_datasets(tmp_path: Path, dataset: str):
     svc = ImportService()

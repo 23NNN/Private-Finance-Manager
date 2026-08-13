@@ -20,6 +20,7 @@ from src.infrastructure.db.orm_models import (
     ExpenseGroup,
     ImportRun,
     IncomeFixed,
+    IncomeHourly,
     PayoutTiming,
     PayRule,
     PayRuleType,
@@ -179,7 +180,6 @@ class ImportService:
     # dataset, not a bug fix — rejected explicitly instead of silently
     # producing wrong or crashing imports. Use the Excel import instead.
     _UNSUPPORTED_CSV_DATASETS = {
-        "income_hourly",
         "expense_recurring",
         "expense_variable",
         "loans",
@@ -467,6 +467,72 @@ class ImportService:
                             )
                             inserted += 1
 
+                    elif dataset == "income_hourly":
+                        emp_name = _norm(_get(r, "employer_name", "employer", "arbeitgeber"))
+                        if not emp_name:
+                            issues.append(
+                                ImportIssue(
+                                    dataset,
+                                    row_idx,
+                                    "employer_name",
+                                    "",
+                                    "Required field missing – row skipped.",
+                                )
+                            )
+                            skipped += 1
+                            continue
+                        emp = ensure_employer(emp_name)
+
+                        year = parse_int(_get(r, "year", "jahr"))
+                        month = parse_month(_get(r, "month", "monat"))
+
+                        hours_normal = parse_decimal(_get(r, "hours_normal", "stunden"), default=Decimal("0"))
+                        night = parse_decimal(_get(r, "night", "nacht"), default=Decimal("0"))
+                        sunday = parse_decimal(_get(r, "sunday", "sonntag"), default=Decimal("0"))
+                        holiday = parse_decimal(_get(r, "holiday", "feiertag"), default=Decimal("0"))
+                        overtime = parse_decimal(_get(r, "overtime", "ueberstunden"), default=Decimal("0"))
+                        special_amount = parse_decimal(_get(r, "special_amount", "sonder"), default=Decimal("0"))
+                        actual_amount = parse_decimal(_get(r, "actual_amount", "ist"), default=Decimal("0"))
+                        payout_timing = _payout_timing_from_any(_get(r, "payout_timing", "auszahlung"))
+
+                        acc_label = _norm(_get(r, "account_label", "konto"))
+                        account = ensure_account(acc_label) if acc_label else None
+                        notes = _norm(_get(r, "notes", "notiz")) or None
+
+                        existing = uow.income_hourly.get_by_emp_period(emp.id, year, month)
+                        if existing:
+                            existing.hours_normal = hours_normal
+                            existing.night = night
+                            existing.sunday = sunday
+                            existing.holiday = holiday
+                            existing.overtime = overtime
+                            existing.special_amount = special_amount
+                            existing.actual_amount = actual_amount
+                            existing.payout_timing = payout_timing
+                            existing.account_id = account.id if account else None
+                            existing.notes = notes
+                            updated += 1
+                        else:
+                            uow.income_hourly.upsert(
+                                IncomeHourly(
+                                    employer_id=emp.id,
+                                    year=year,
+                                    month=month,
+                                    hours_normal=hours_normal,
+                                    night=night,
+                                    sunday=sunday,
+                                    holiday=holiday,
+                                    overtime=overtime,
+                                    special_amount=special_amount,
+                                    calc_amount=Decimal("0.00"),
+                                    actual_amount=actual_amount,
+                                    payout_timing=payout_timing,
+                                    account_id=account.id if account else None,
+                                    notes=notes,
+                                )
+                            )
+                            inserted += 1
+
                     else:
                         raise ValueError(f"Nicht implementiert: {dataset}")
 
@@ -542,6 +608,35 @@ class ImportService:
                 "monat",
                 "base_amount",
                 "grundbetrag",
+                "special_amount",
+                "sonder",
+                "actual_amount",
+                "ist",
+                "payout_timing",
+                "auszahlung",
+                "account_label",
+                "konto",
+            }
+
+        if dataset == "income_hourly":
+            return base | {
+                "employer_name",
+                "employer",
+                "arbeitgeber",
+                "year",
+                "jahr",
+                "month",
+                "monat",
+                "hours_normal",
+                "stunden",
+                "night",
+                "nacht",
+                "sunday",
+                "sonntag",
+                "holiday",
+                "feiertag",
+                "overtime",
+                "ueberstunden",
                 "special_amount",
                 "sonder",
                 "actual_amount",
