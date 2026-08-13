@@ -1,6 +1,6 @@
 # CLAUDE.md – Finance Manager Project Context
 
-> At the start of a new session: read this file → run `doctor.py` + `i18n_audit.py` → start with Priority 1.
+> At the start of a new session: read this file → run `doctor.py` + `i18n_audit.py` + `i18n_seed_audit.py` → start with Priority 1.
 
 ---
 
@@ -151,9 +151,9 @@ New keys must be seeded for **all 5 languages** in `schema_patch.py`.
 
 ## i18n Status
 
-Patches 1–006b + Tasks 1a–3 all done regarding `tr()`-wrapping. 108 audit candidates remaining – all confirmed false positives (enum values, Tkinter types, font names, dev-only logger strings).
+Patches 1–006b + Tasks 1a–3 all done regarding `tr()`-wrapping. 111 audit candidates remaining – all confirmed false positives (enum values, Tkinter types, font names, dev-only logger strings).
 
-**Known gap (found 2026-08-13, unfixed):** ~60 seed keys in `schema_patch.py` have untranslated English placeholder text for `fr`/`es`/`it` (e.g. menu items, tab labels, common actions). `i18n_audit.py` does not catch this — it only audits for missing `tr()` calls, not translation quality of existing seed values. See "Open Issues" above.
+**Seed-translation quality (fixed 2026-08-13, v1.2.4):** 57 seed keys in `schema_patch.py` had untranslated English placeholder text for `fr`/`es`/`it` (menu items, tab labels, common actions, the language-switcher's own names) — not caught by `i18n_audit.py`, which only checks missing `tr()` wrapping, not seed-value quality. New `scripts/i18n_seed_audit.py` checks exactly this and currently reports 0 findings; run it whenever `schema_patch.py`'s `seed` dict changes. A curated allowlist in that script documents ~15 keys that are legitimately identical across languages (loanwords like PIN/CSV, real cognates like "Variable"/"Bonus", or the product name `app.title`) — do not "fix" those.
 
 **Intentionally German data (do NOT translate):**
 - `excel_importer.py` / `import_service.py` → German Excel column headers
@@ -165,22 +165,16 @@ Patches 1–006b + Tasks 1a–3 all done regarding `tr()`-wrapping. 108 audit ca
 
 ## Open Issues / Next Priorities
 
-**Aktueller Stand:** `main` = v1.2.2 (released 2026-08-13). Branch `chore/ruff-legacy-cleanup`
-(Zyklus 3, 2026-08-13) offen: alle Ruff-Findings außer E501 behoben (siehe HANDOVER.md für Details
-je Regel). CI läuft jetzt Full-Repo-`ruff check .` statt diff-gescoped (E501 + `src/security/`
-weiterhin ausgenommen).
+**Aktueller Stand:** `main` = v1.2.4 (released 2026-08-13). Zyklus 3 (Ruff-Legacy-Cleanup) und
+Zyklus 4 (i18n-Seed-Übersetzungslücke) sind abgeschlossen und gemergt. CI läuft Full-Repo-`ruff
+check .` (E501 + `src/security/` weiterhin ausgenommen).
 
 ### Offenes / Nächste Schritte
-- **Zyklus 4 (geplant, nicht gestartet):** E501-Reflow (~613 zu lange Zeilen) in Batches pro
+- **Zyklus 5 (geplant, nicht gestartet):** E501-Reflow (~613 zu lange Zeilen) in Batches pro
   Verzeichnis. `line-length` bleibt bei 120 (Anheben spart laut Analyse kaum Aufwand).
 - **Manuell zu erledigen** (AI-Edit-Lock auf `src/security/**`, siehe oben): 3× `F401`
   (`manager.py`: `os`, `time` ungenutzt; `bootstrap.py`: `verify_pin` ungenutzt) + 3× toter
   `# noqa: WPS433`-Kommentar in `manager.py` (kein gültiger Ruff-Code, Altlast).
-- **i18n-Lücke entdeckt (Zyklus 3, nicht behoben):** ~60 Keys in `schema_patch.py` haben
-  unübersetzten englischen Platzhaltertext für `fr`/`es`/`it` (z.B. `tab.income`,
-  `menu.security.mode`, `common.copy`) — live ausgeliefert, nicht durch `i18n_audit.py` erfasst
-  (das prüft nur fehlendes `tr()`-Wrapping, nicht Übersetzungsqualität der Seed-Werte). Widerspricht
-  der bisherigen "i18n Status: complete"-Annahme unten — echte Übersetzungsarbeit, kein Lint-Fix.
 - **v1.2.2:** CSV-Import repariert für 4/10 Datensatz-Typen (accounts, employers, pay_rules,
   categories). Die anderen 6 zielen auf ein veraltetes Datenmodell und werden bewusst mit klarer
   Fehlermeldung abgewiesen statt zu raten — Neudesign des CSV-Spaltenformats ist ein separates
@@ -249,6 +243,7 @@ class LoanEventType(str, enum.Enum):
 # Health checks (before every commit/build)
 python scripts/doctor.py --imports --contracts --strict
 python scripts/i18n_audit.py
+python scripts/i18n_seed_audit.py
 python scripts/pre_build_check.py
 
 # Fix imports
@@ -285,5 +280,6 @@ py -3.11 -m venv .venv
 ```bash
 python scripts/doctor.py --imports --contracts --strict
 python scripts/i18n_audit.py
+python scripts/i18n_seed_audit.py
 # → Check "Open Issues / Next Priorities" for next task
 ```

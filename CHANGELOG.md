@@ -6,6 +6,32 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.2.4] — 2026-08-13
+
+### Fixed
+
+- **57 i18n seed keys had untranslated English placeholder text for `fr`/`es`/`it`** (menu items,
+  tab labels, common actions, dataset picker labels, error-dialog text, and — most visibly — the
+  language switcher's own display names for German/English/French/Spanish/Italian). Discovered
+  and left unfixed in v1.2.3. All corrected with real translations, cross-checked against already-
+  correctly-translated sibling keys in the same file for consistency (e.g. `filter.*` now reuses
+  `common.filter`/`common.all`, `dataset.*` reuses `io.dataset.*` where the concept overlaps).
+  Includes a French grammatical-gender fix for `status.active`/`status.inactive` ("Actif"/
+  "Inactif", agreeing with "statut").
+- **Already-provisioned databases now receive the corrected values, not just new ones**:
+  `schema_patch.py`'s i18n seed loop is insert-only (skips existing rows), so fixing the seed
+  dict alone would only have helped brand-new installs. Added a narrow, explicit force-refresh
+  list (`_I18N_FORCE_REFRESH_KEYS`, the 57 corrected keys) that gets re-applied via `UPDATE` on
+  every `ensure_schema()` run, instead of switching the whole seed mechanism to a general upsert.
+
+### Added
+
+- `scripts/i18n_seed_audit.py`: new tooling that flags seed values in `schema_patch.py` where
+  `fr`/`es`/`it` is byte-identical to `en` (i.e. never actually translated), filtered by a
+  curated allowlist of legitimate loanwords/cognates. Complements `i18n_audit.py`, which only
+  checks for missing `tr()`/`trf()` wrapping, not seed-value translation quality. Currently 0
+  findings across all 579 seed keys.
+
 ## [1.2.3] — 2026-08-13
 
 ### Fixed
