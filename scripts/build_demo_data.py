@@ -262,7 +262,9 @@ def _seed_master_data(s, *, year: int) -> DemoIds:
     )
 
     emp_main = _get_or_create_employer(s, name="Example Corp", payout=orm.PayoutTiming.MID, default_account_id=giro.id)
-    emp_side = _get_or_create_employer(s, name="Side Job Café", payout=orm.PayoutTiming.BEGINNING, default_account_id=giro.id)
+    emp_side = _get_or_create_employer(
+        s, name="Side Job Café", payout=orm.PayoutTiming.BEGINNING, default_account_id=giro.id
+    )
 
     goal_em = _get_or_create_goal(
         s,
@@ -651,7 +653,7 @@ def _seed_expenses(s, *, ids: DemoIds, periods: list[tuple[int, int]], rnd: rand
         for i in range(4):
             amt = _eur_from_cents(rnd.randint(3500, 9500))
             v = orm.ExpenseVariable()
-            _set_if_has(v, "name", f"Grocery Shopping {i+1}")
+            _set_if_has(v, "name", f"Grocery Shopping {i + 1}")
             _set_if_has(v, "category_id", ids.cat_food_id)
             _set_if_has(v, "amount", amt)
             _set_if_has(v, "year", y)
@@ -696,8 +698,12 @@ def _seed_loans(s, *, ids: DemoIds, periods: list[tuple[int, int]], mini: bool) 
         return obj
 
     base_year = periods[0][0]
-    car = upsert_loan("Car Loan", Decimal("12000.00"), Decimal("250.00"), date(base_year, 1, 1), orm.PayoutTiming.BEGINNING)
-    cons = upsert_loan("Laptop Installment", Decimal("1800.00"), Decimal("75.00"), date(base_year, 3, 1), orm.PayoutTiming.MID)
+    car = upsert_loan(
+        "Car Loan", Decimal("12000.00"), Decimal("250.00"), date(base_year, 1, 1), orm.PayoutTiming.BEGINNING
+    )
+    cons = upsert_loan(
+        "Laptop Installment", Decimal("1800.00"), Decimal("75.00"), date(base_year, 3, 1), orm.PayoutTiming.MID
+    )
 
     def add_event(
         loan_id: int,
@@ -724,7 +730,15 @@ def _seed_loans(s, *, ids: DemoIds, periods: list[tuple[int, int]], mini: bool) 
     for y, m in months_for_events:
         add_event(car.id, y, m, orm.LoanEventType.PAYMENT, amount=None, note="Regular Payment")
         if (y, m) == (base_year, 6):
-            add_event(car.id, y, m, orm.LoanEventType.RATE_CHANGE, amount=None, new_payment=Decimal("275.00"), note="Payment adjusted")
+            add_event(
+                car.id,
+                y,
+                m,
+                orm.LoanEventType.RATE_CHANGE,
+                amount=None,
+                new_payment=Decimal("275.00"),
+                note="Payment adjusted",
+            )
 
         if (y, m) >= (base_year, 3):
             add_event(cons.id, y, m, orm.LoanEventType.PAYMENT, amount=None, note="Regular Payment")
@@ -745,7 +759,7 @@ def main(argv: list[str]) -> int:
     print(f"DB:  {db_path}")
     print(f"Logs:{(data_dir / 'logs')}")
     print("\nStart (Demo):")
-    print(f"  python app.py --data-dir \"{data_dir}\" --log-dir \"{data_dir / 'logs'}\"")
+    print(f'  python app.py --data-dir "{data_dir}" --log-dir "{data_dir / "logs"}"')
     return 0
 
 

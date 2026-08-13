@@ -77,7 +77,9 @@ class HourlyIncomeDialog(tk.Toplevel):
         self._overtime = tk.StringVar(value=str(initial.get("overtime", "0.00")))
         self._special_amount = tk.StringVar(value=str(initial.get("special_amount", "0.00")))
         self._actual_amount = tk.StringVar(value=str(initial.get("actual_amount", "0.00")))
-        self._payout_timing = tk.StringVar(value=str(initial.get("payout_timing", payout_values[0] if payout_values else "")))
+        self._payout_timing = tk.StringVar(
+            value=str(initial.get("payout_timing", payout_values[0] if payout_values else ""))
+        )
         self._account = tk.StringVar(value=str(initial.get("account", "")))
         self._notes = tk.StringVar(value=str(initial.get("notes", "")))
 
@@ -142,17 +144,23 @@ class HourlyIncomeDialog(tk.Toplevel):
         add_row(right, 0, tr("income.hourly.field.special_optional"), self._special_amount)
         add_row(right, 1, tr("income.hourly.field.actual_optional"), self._actual_amount)
 
-        ttk.Label(right, text=tr("income.hourly.field.payout")).grid(row=2, column=0, sticky="w", pady=(10, 3), padx=(0, 10))
+        ttk.Label(right, text=tr("income.hourly.field.payout")).grid(
+            row=2, column=0, sticky="w", pady=(10, 3), padx=(0, 10)
+        )
         ttk.Combobox(right, textvariable=self._payout_timing, values=payout_values, state="readonly", width=16).grid(
             row=2, column=1, sticky="w", pady=(10, 3)
         )
 
-        ttk.Label(right, text=tr("income.hourly.field.account_optional")).grid(row=3, column=0, sticky="w", pady=3, padx=(0, 10))
+        ttk.Label(right, text=tr("income.hourly.field.account_optional")).grid(
+            row=3, column=0, sticky="w", pady=3, padx=(0, 10)
+        )
         ttk.Combobox(right, textvariable=self._account, values=account_values, state="readonly", width=26).grid(
             row=3, column=1, sticky="w", pady=3
         )
 
-        ttk.Label(right, text=tr("income.hourly.field.notes_optional")).grid(row=4, column=0, sticky="w", pady=3, padx=(0, 10))
+        ttk.Label(right, text=tr("income.hourly.field.notes_optional")).grid(
+            row=4, column=0, sticky="w", pady=3, padx=(0, 10)
+        )
         ttk.Entry(right, textvariable=self._notes, width=28).grid(row=4, column=1, sticky="w", pady=3)
 
         preview = ttk.Frame(root)
@@ -200,7 +208,9 @@ class HourlyIncomeDialog(tk.Toplevel):
 
         base = rules.get("HOURLY_WAGE")
         if base and base.unit == "EUR_PER_HOUR":
-            self._rule_labels["HOURLY_WAGE"].config(text=f"{_fmt_money(base.value)} {tr('income.hourly.unit.eur_per_hour')}")
+            self._rule_labels["HOURLY_WAGE"].config(
+                text=f"{_fmt_money(base.value)} {tr('income.hourly.unit.eur_per_hour')}"
+            )
         else:
             self._rule_labels["HOURLY_WAGE"].config(text="-")
             self._warn_label.config(text=tr("income.hourly.note.no_rate"))

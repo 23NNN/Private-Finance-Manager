@@ -149,7 +149,9 @@ class AccountService:
                 changed["expense_recurring_reassigned"] = int(res.rowcount or 0)
 
             if usage.loans > 0:
-                res = s.execute(update(Loan).where(Loan.account_id == account_id).values(account_id=replacement_account_id))
+                res = s.execute(
+                    update(Loan).where(Loan.account_id == account_id).values(account_id=replacement_account_id)
+                )
                 changed["loans_reassigned"] = int(res.rowcount or 0)
 
             # Nullable FKs => reassign or nullify

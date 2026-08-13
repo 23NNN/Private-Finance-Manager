@@ -168,7 +168,9 @@ class AccountsPresenter:
             FieldSpec("role_debit", tr("accounts.field.role_debit"), "check", required=False),
             FieldSpec("notes", tr("accounts.field.notes"), "text", required=False, width=60),
         ]
-        dlg = FormDialog(self._view, tr("accounts.dialog.add_title"), fields, initial={"role_income": True, "role_debit": True})
+        dlg = FormDialog(
+            self._view, tr("accounts.dialog.add_title"), fields, initial={"role_income": True, "role_debit": True}
+        )
         data = dlg.show()
         if not data:
             return

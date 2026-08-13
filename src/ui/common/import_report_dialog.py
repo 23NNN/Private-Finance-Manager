@@ -109,9 +109,11 @@ class ImportReportDialog(tk.Toplevel):
         for it in self._issues:
             ds = _maybe_tr(_DATASET_KEY_MAP, str(it.get("dataset", "") or ""))
             sh = _maybe_tr(_SHEET_KEY_MAP, str(it.get("sheet", "") or ""))
-            lines.append(
-                f"{ds}\t{sh}\t{it.get('row','')}\t{it.get('field','')}\t{it.get('value','')}\t{it.get('message','')}"
-            )
+            row = it.get("row", "")
+            field = it.get("field", "")
+            value = it.get("value", "")
+            message = it.get("message", "")
+            lines.append(f"{ds}\t{sh}\t{row}\t{field}\t{value}\t{message}")
 
         self.clipboard_clear()
         self.clipboard_append("\n".join(lines))

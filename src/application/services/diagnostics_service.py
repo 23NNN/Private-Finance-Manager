@@ -49,7 +49,7 @@ class DiagnosticsService:
             def has_col(table: str, col: str) -> bool:
                 if table not in tables:
                     return False
-                cols = {c['name'] for c in insp.get_columns(table)}
+                cols = {c["name"] for c in insp.get_columns(table)}
                 return col in cols
 
             required_tables = [
@@ -82,7 +82,17 @@ class DiagnosticsService:
             # row counts (best-effort)
             with engine.connect() as conn:
                 lines.append("")
-                for t in ["account", "employer", "pay_rule", "income_fixed", "income_hourly", "expense_recurring", "expense_variable", "loan", "loan_event"]:
+                for t in [
+                    "account",
+                    "employer",
+                    "pay_rule",
+                    "income_fixed",
+                    "income_hourly",
+                    "expense_recurring",
+                    "expense_variable",
+                    "loan",
+                    "loan_event",
+                ]:
                     if t not in tables:
                         continue
                     n = conn.execute(text(f"SELECT COUNT(*) FROM {t}")).scalar_one()

@@ -105,7 +105,7 @@ class IncomeService:
             obj.month = dto.month
             obj.base_amount = dto.base_amount
             obj.special_amount = dto.special_amount
-            obj.calc_amount = (dto.base_amount + dto.special_amount)
+            obj.calc_amount = dto.base_amount + dto.special_amount
             obj.actual_amount = dto.actual_amount
             obj.payout_timing = PayoutTiming(dto.payout_timing)
             obj.account_id = dto.account_id
@@ -304,7 +304,9 @@ class IncomeService:
         rules = [PayRule(rule_type=r.rule_type.value, value=r.value, unit=r.unit.value) for r in best.values()]
 
         # Legacy BW/BY is neutralised (rollup)
-        hours_normal = (obj.hours_normal or Decimal("0")) + (obj.hours_bw or Decimal("0")) + (obj.hours_by or Decimal("0"))
+        hours_normal = (
+            (obj.hours_normal or Decimal("0")) + (obj.hours_bw or Decimal("0")) + (obj.hours_by or Decimal("0"))
+        )
         night = (obj.night or Decimal("0")) + (obj.night_bw or Decimal("0")) + (obj.night_by or Decimal("0"))
         sunday = (obj.sunday or Decimal("0")) + (obj.sunday_bw or Decimal("0")) + (obj.sunday_by or Decimal("0"))
 

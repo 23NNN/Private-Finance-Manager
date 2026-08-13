@@ -336,12 +336,18 @@ def import_excel_template(path: str, uow_factory=UnitOfWork) -> dict:
 
                 year = parse_int(_pick(row, "Jahr", "Year"))
                 month = parse_month(_pick(row, "Monat", "Month"))
-                base_amount = parse_decimal(_pick(row, "Grundbetrag", "Basis", "Base", "base_amount"), default=Decimal("0"))
-                special_amount = parse_decimal(_pick(row, "Sonder", "Sondereinnahmen", "special_amount"), default=Decimal("0"))
+                base_amount = parse_decimal(
+                    _pick(row, "Grundbetrag", "Basis", "Base", "base_amount"), default=Decimal("0")
+                )
+                special_amount = parse_decimal(
+                    _pick(row, "Sonder", "Sondereinnahmen", "special_amount"), default=Decimal("0")
+                )
                 actual_amount = parse_decimal(_pick(row, "IST", "actual_amount"), default=Decimal("0"))
 
                 timing_raw = _pick(row, "Auszahlung", "Timing", "payout_timing")
-                payout_timing = PayoutTiming.BEGINNING if _norm(timing_raw).lower() in {"anfang", "beginning"} else PayoutTiming.MID
+                payout_timing = (
+                    PayoutTiming.BEGINNING if _norm(timing_raw).lower() in {"anfang", "beginning"} else PayoutTiming.MID
+                )
 
                 acc_label = _pick(row, "Konto", "Account", "account_label")
                 account_id = get_account_id(acc_label) if acc_label else None
@@ -393,7 +399,9 @@ def import_excel_template(path: str, uow_factory=UnitOfWork) -> dict:
                 obj.actual_amount = dec("IST", "actual_amount")
 
                 timing_raw = _pick(row, "Auszahlung", "Timing", "payout_timing")
-                obj.payout_timing = PayoutTiming.BEGINNING if _norm(timing_raw).lower() in {"anfang", "beginning"} else PayoutTiming.MID
+                obj.payout_timing = (
+                    PayoutTiming.BEGINNING if _norm(timing_raw).lower() in {"anfang", "beginning"} else PayoutTiming.MID
+                )
 
                 acc_label = _pick(row, "Konto", "Account", "account_label")
                 obj.account_id = get_account_id(acc_label) if acc_label else None
@@ -527,7 +535,9 @@ def import_excel_template(path: str, uow_factory=UnitOfWork) -> dict:
 
                 timing_raw = _norm(_pick(row, "Auszahlung", "payment_timing"))
                 if timing_raw:
-                    loan.payment_timing = PaymentTiming.BEGINNING if timing_raw.lower() in {"anfang", "beginning"} else PaymentTiming.MID
+                    loan.payment_timing = (
+                        PaymentTiming.BEGINNING if timing_raw.lower() in {"anfang", "beginning"} else PaymentTiming.MID
+                    )
 
                 uow.loans.upsert(loan)
                 stats["loans"] += 1

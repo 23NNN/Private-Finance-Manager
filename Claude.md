@@ -165,13 +165,18 @@ Patches 1–006b + Tasks 1a–3 all done regarding `tr()`-wrapping. 111 audit ca
 
 ## Open Issues / Next Priorities
 
-**Aktueller Stand:** `main` = v1.2.4 (released 2026-08-13). Zyklus 3 (Ruff-Legacy-Cleanup) und
-Zyklus 4 (i18n-Seed-Übersetzungslücke) sind abgeschlossen und gemergt. CI läuft Full-Repo-`ruff
-check .` (E501 + `src/security/` weiterhin ausgenommen).
+**Aktueller Stand:** `main` = v1.2.5 (in Arbeit). Zyklus 3 (Ruff-Legacy-Cleanup), Zyklus 4
+(i18n-Seed-Übersetzungslücke) und Zyklus 5 (E501-Reflow) sind abgeschlossen. CI läuft Full-Repo-
+`ruff check .` mit vollem Regelsatz inkl. E501 (nur `src/security/` bleibt ausgenommen, AI-Edit-Lock).
 
 ### Offenes / Nächste Schritte
-- **Zyklus 5 (geplant, nicht gestartet):** E501-Reflow (~613 zu lange Zeilen) in Batches pro
-  Verzeichnis. `line-length` bleibt bei 120 (Anheben spart laut Analyse kaum Aufwand).
+- **CI Required Status Check (angefragt, blockiert):** Der bestehende GitHub-Ruleset
+  `main-protection` (id 20660199) erzwingt PR-only + kein Force-Push, aber noch keinen grünen
+  CI-Check vor dem Merge. `gh api PATCH` auf den Ruleset-Endpoint schlägt mit dem aktuellen
+  `gh`-OAuth-Token (Scope `repo`) konsequent mit 404 fehl — vermutlich fehlt `Administration:
+  write`, das klassische OAuth-Scopes für Repository-Rulesets nicht abdecken. Braucht entweder
+  eine manuelle Änderung über die GitHub-Weboberfläche (Settings → Rules → Rulesets) oder ein
+  Fine-grained PAT mit `Administration: write`.
 - **Manuell zu erledigen** (AI-Edit-Lock auf `src/security/**`, siehe oben): 3× `F401`
   (`manager.py`: `os`, `time` ungenutzt; `bootstrap.py`: `verify_pin` ungenutzt) + 3× toter
   `# noqa: WPS433`-Kommentar in `manager.py` (kein gültiger Ruff-Code, Altlast).

@@ -30,23 +30,103 @@ class ExportService:
     ]
 
     SCHEMAS: dict[str, dict] = {
-        "accounts": {"fields": ["label", "account_name", "bank_name", "iban", "role_income", "role_debit", "notes"], "needs_period": False},
+        "accounts": {
+            "fields": ["label", "account_name", "bank_name", "iban", "role_income", "role_debit", "notes"],
+            "needs_period": False,
+        },
         "employers": {"fields": ["name", "payout_timing", "default_account_label", "notes"], "needs_period": False},
         "pay_rules": {"fields": ["employer_name", "rule_type", "unit", "value", "notes"], "needs_period": False},
         "categories": {"fields": ["name", "group"], "needs_period": False},
-        "income_fixed": {"fields": ["employer_name", "year", "month", "base_amount", "special_amount", "actual_amount", "payout_timing", "account_label", "notes"], "needs_period": True},
-        "income_hourly": {
+        "income_fixed": {
             "fields": [
-                "employer_name", "year", "month",
-                "hours_normal", "night", "sunday", "holiday", "overtime",
-                "special_amount", "actual_amount", "payout_timing", "account_label", "notes"
+                "employer_name",
+                "year",
+                "month",
+                "base_amount",
+                "special_amount",
+                "actual_amount",
+                "payout_timing",
+                "account_label",
+                "notes",
             ],
             "needs_period": True,
         },
-        "expense_recurring": {"fields": ["name", "category_name", "amount", "frequency_months", "due_day", "anchor_month", "status", "account_label", "pay_bucket", "allocation_override", "notes"], "needs_period": False},
-        "expense_variable": {"fields": ["name", "category_name", "amount", "year", "month", "status", "account_label", "pay_bucket", "notes"], "needs_period": True},
-        "loans": {"fields": ["name", "start_date", "principal_initial", "annual_interest_rate", "regular_payment", "payment_timing", "account_label", "status", "notes"], "needs_period": False},
-        "loan_events": {"fields": ["loan_name", "event_date", "year", "month", "event_type", "amount", "new_regular_payment", "new_annual_interest_rate", "notes"], "needs_period": False},
+        "income_hourly": {
+            "fields": [
+                "employer_name",
+                "year",
+                "month",
+                "hours_normal",
+                "night",
+                "sunday",
+                "holiday",
+                "overtime",
+                "special_amount",
+                "actual_amount",
+                "payout_timing",
+                "account_label",
+                "notes",
+            ],
+            "needs_period": True,
+        },
+        "expense_recurring": {
+            "fields": [
+                "name",
+                "category_name",
+                "amount",
+                "frequency_months",
+                "due_day",
+                "anchor_month",
+                "status",
+                "account_label",
+                "pay_bucket",
+                "allocation_override",
+                "notes",
+            ],
+            "needs_period": False,
+        },
+        "expense_variable": {
+            "fields": [
+                "name",
+                "category_name",
+                "amount",
+                "year",
+                "month",
+                "status",
+                "account_label",
+                "pay_bucket",
+                "notes",
+            ],
+            "needs_period": True,
+        },
+        "loans": {
+            "fields": [
+                "name",
+                "start_date",
+                "principal_initial",
+                "annual_interest_rate",
+                "regular_payment",
+                "payment_timing",
+                "account_label",
+                "status",
+                "notes",
+            ],
+            "needs_period": False,
+        },
+        "loan_events": {
+            "fields": [
+                "loan_name",
+                "event_date",
+                "year",
+                "month",
+                "event_type",
+                "amount",
+                "new_regular_payment",
+                "new_annual_interest_rate",
+                "notes",
+            ],
+            "needs_period": False,
+        },
     }
 
     def __init__(self, uow_factory=UnitOfWork) -> None:
@@ -98,12 +178,38 @@ class ExportService:
         )
         _add_sheet(
             "Einkommen_Stunden",
-            ["Employer", "Jahr", "Monat", "Stunden", "Nacht", "Sonntag", "Feiertag", "Überstunden", "Sonder", "IST", "Auszahlung", "Konto", "Notiz"],
+            [
+                "Employer",
+                "Jahr",
+                "Monat",
+                "Stunden",
+                "Nacht",
+                "Sonntag",
+                "Feiertag",
+                "Überstunden",
+                "Sonder",
+                "IST",
+                "Auszahlung",
+                "Konto",
+                "Notiz",
+            ],
             [["Firma Beispiel", "2026", "1", "160", "10", "0", "0", "5", "0.00", "0.00", "MID", "GIRO", ""]],
         )
         _add_sheet(
             "Abo & Verträge",
-            ["Name", "Kategorie", "Betrag", "Intervall", "Tag", "Startmonat", "Status", "Konto", "Zahlungszeitpunkt", "ModusOverride", "Notiz"],
+            [
+                "Name",
+                "Kategorie",
+                "Betrag",
+                "Intervall",
+                "Tag",
+                "Startmonat",
+                "Status",
+                "Konto",
+                "Zahlungszeitpunkt",
+                "ModusOverride",
+                "Notiz",
+            ],
             [["Netflix", "Abos", "12.99", "1", "5", "", "ACTIVE", "GIRO", "NONE", "", ""]],
         )
         _add_sheet(
@@ -113,7 +219,19 @@ class ExportService:
         )
         _add_sheet(
             "Kredit",
-            ["Kredit", "Startdatum", "Startbetrag", "Rate", "Konto", "Status", "Auszahlung", "Jahr", "Monat", "Zahlung", "Extra"],
+            [
+                "Kredit",
+                "Startdatum",
+                "Startbetrag",
+                "Rate",
+                "Konto",
+                "Status",
+                "Auszahlung",
+                "Jahr",
+                "Monat",
+                "Zahlung",
+                "Extra",
+            ],
             [
                 ["Auto Kredit", "2026-01-01", "15000.00", "250.00", "GIRO", "ACTIVE", "MID", "", "", "", ""],
                 ["Auto Kredit", "", "", "", "", "", "", "2026", "1", "250.00", ""],
@@ -163,147 +281,181 @@ class ExportService:
     def _example_rows(self, dataset: str) -> list[dict]:
         # Intentionally minimal + valid-looking.
         if dataset == "accounts":
-            return [{
-                "label": "GIRO",
-                "account_name": "Girokonto",
-                "bank_name": "Beispielbank",
-                "iban": "DE00123456781234567890",
-                "role_income": "1",
-                "role_debit": "1",
-                "notes": "Hauptkonto",
-            }]
+            return [
+                {
+                    "label": "GIRO",
+                    "account_name": "Girokonto",
+                    "bank_name": "Beispielbank",
+                    "iban": "DE00123456781234567890",
+                    "role_income": "1",
+                    "role_debit": "1",
+                    "notes": "Hauptkonto",
+                }
+            ]
         if dataset == "employers":
-            return [{
-                "name": "Firma Beispiel",
-                "payout_timing": "MID",
-                "default_account_label": "GIRO",
-                "notes": "",
-            }]
+            return [
+                {
+                    "name": "Firma Beispiel",
+                    "payout_timing": "MID",
+                    "default_account_label": "GIRO",
+                    "notes": "",
+                }
+            ]
         if dataset == "pay_rules":
             return [
-                {"employer_name": "Firma Beispiel", "rule_type": "Stundenlohn", "unit": "EUR_PER_HOUR", "value": "15.00", "notes": "BW"},
-                {"employer_name": "Firma Beispiel", "rule_type": "Nachtzuschlag", "unit": "MULTIPLIER", "value": "1.25", "notes": ""},
+                {
+                    "employer_name": "Firma Beispiel",
+                    "rule_type": "Stundenlohn",
+                    "unit": "EUR_PER_HOUR",
+                    "value": "15.00",
+                    "notes": "BW",
+                },
+                {
+                    "employer_name": "Firma Beispiel",
+                    "rule_type": "Nachtzuschlag",
+                    "unit": "MULTIPLIER",
+                    "value": "1.25",
+                    "notes": "",
+                },
             ]
         if dataset == "categories":
             return [{"name": "Miete", "group": "FIX"}]
         if dataset == "income_fixed":
-            return [{
-                "employer_name": "Firma Beispiel",
-                "year": "2026",
-                "month": "1",
-                "base_amount": "3000.00",
-                "special_amount": "0.00",
-                "actual_amount": "0.00",
-                "payout_timing": "MID",
-                "account_label": "GIRO",
-                "notes": "",
-            }]
+            return [
+                {
+                    "employer_name": "Firma Beispiel",
+                    "year": "2026",
+                    "month": "1",
+                    "base_amount": "3000.00",
+                    "special_amount": "0.00",
+                    "actual_amount": "0.00",
+                    "payout_timing": "MID",
+                    "account_label": "GIRO",
+                    "notes": "",
+                }
+            ]
         if dataset == "income_hourly":
-            return [{
-                "employer_name": "Firma Beispiel",
-                "year": "2026",
-                "month": "1",
-                "hours_normal": "160",
-                "night": "10",
-                "sunday": "0",
-                "holiday": "0",
-                "overtime": "5",
-                "special_amount": "0.00",
-                "actual_amount": "0.00",
-                "payout_timing": "MID",
-                "account_label": "GIRO",
-                "notes": "",
-            }]
+            return [
+                {
+                    "employer_name": "Firma Beispiel",
+                    "year": "2026",
+                    "month": "1",
+                    "hours_normal": "160",
+                    "night": "10",
+                    "sunday": "0",
+                    "holiday": "0",
+                    "overtime": "5",
+                    "special_amount": "0.00",
+                    "actual_amount": "0.00",
+                    "payout_timing": "MID",
+                    "account_label": "GIRO",
+                    "notes": "",
+                }
+            ]
         if dataset == "expense_recurring":
-            return [{
-                "name": "Netflix",
-                "category_name": "Abos",
-                "amount": "12.99",
-                "frequency_months": "1",
-                "due_day": "5",
-                "anchor_month": "",
-                "status": "ACTIVE",
-                "account_label": "GIRO",
-                "pay_bucket": "NONE",
-                "allocation_override": "",
-                "notes": "",
-            }]
+            return [
+                {
+                    "name": "Netflix",
+                    "category_name": "Abos",
+                    "amount": "12.99",
+                    "frequency_months": "1",
+                    "due_day": "5",
+                    "anchor_month": "",
+                    "status": "ACTIVE",
+                    "account_label": "GIRO",
+                    "pay_bucket": "NONE",
+                    "allocation_override": "",
+                    "notes": "",
+                }
+            ]
         if dataset == "expense_variable":
-            return [{
-                "name": "Lebensmittel",
-                "category_name": "Haushalt",
-                "amount": "250.00",
-                "year": "2026",
-                "month": "1",
-                "status": "OPEN",
-                "account_label": "GIRO",
-                "pay_bucket": "NONE",
-                "notes": "",
-            }]
+            return [
+                {
+                    "name": "Lebensmittel",
+                    "category_name": "Haushalt",
+                    "amount": "250.00",
+                    "year": "2026",
+                    "month": "1",
+                    "status": "OPEN",
+                    "account_label": "GIRO",
+                    "pay_bucket": "NONE",
+                    "notes": "",
+                }
+            ]
         if dataset == "loans":
-            return [{
-                "name": "Auto Kredit",
-                "start_date": "2026-01-01",
-                "principal_initial": "15000.00",
-                "annual_interest_rate": "0.0000",
-                "regular_payment": "250.00",
-                "payment_timing": "MID",
-                "account_label": "GIRO",
-                "status": "ACTIVE",
-                "notes": "",
-            }]
+            return [
+                {
+                    "name": "Auto Kredit",
+                    "start_date": "2026-01-01",
+                    "principal_initial": "15000.00",
+                    "annual_interest_rate": "0.0000",
+                    "regular_payment": "250.00",
+                    "payment_timing": "MID",
+                    "account_label": "GIRO",
+                    "status": "ACTIVE",
+                    "notes": "",
+                }
+            ]
         if dataset == "loan_events":
-            return [{
-                "loan_name": "Auto Kredit",
-                "event_date": "2026-01-15",
-                "year": "2026",
-                "month": "1",
-                "event_type": "PAYMENT",
-                "amount": "250.00",
-                "new_regular_payment": "",
-                "new_annual_interest_rate": "",
-                "notes": "",
-            }]
+            return [
+                {
+                    "loan_name": "Auto Kredit",
+                    "event_date": "2026-01-15",
+                    "year": "2026",
+                    "month": "1",
+                    "event_type": "PAYMENT",
+                    "amount": "250.00",
+                    "new_regular_payment": "",
+                    "new_annual_interest_rate": "",
+                    "notes": "",
+                }
+            ]
         return []
 
     # -------- exports --------
     def _export_accounts(self, uow) -> list[dict]:
         out = []
         for a in uow.accounts.list_all():
-            out.append({
-                "label": a.label,
-                "account_name": a.account_name,
-                "bank_name": a.bank_name or "",
-                "iban": a.iban or "",
-                "role_income": "1" if a.role_income else "0",
-                "role_debit": "1" if a.role_debit else "0",
-                "notes": a.notes or "",
-            })
+            out.append(
+                {
+                    "label": a.label,
+                    "account_name": a.account_name,
+                    "bank_name": a.bank_name or "",
+                    "iban": a.iban or "",
+                    "role_income": "1" if a.role_income else "0",
+                    "role_debit": "1" if a.role_debit else "0",
+                    "notes": a.notes or "",
+                }
+            )
         return out
 
     def _export_employers(self, uow) -> list[dict]:
         acc_by_id = {a.id: a.label for a in uow.accounts.list_all()}
         out = []
         for e in uow.employers.list_all():
-            out.append({
-                "name": e.name,
-                "payout_timing": getattr(e.payout_timing, "value", str(e.payout_timing)),
-                "default_account_label": acc_by_id.get(e.default_account_id, ""),
-                "notes": e.notes or "",
-            })
+            out.append(
+                {
+                    "name": e.name,
+                    "payout_timing": getattr(e.payout_timing, "value", str(e.payout_timing)),
+                    "default_account_label": acc_by_id.get(e.default_account_id, ""),
+                    "notes": e.notes or "",
+                }
+            )
         return out
 
     def _export_pay_rules(self, uow) -> list[dict]:
         emp_by_id = {e.id: e.name for e in uow.employers.list_all()}
         out = []
         for r in uow.pay_rules.list_all():
-            out.append({
-                "employer_name": emp_by_id.get(r.employer_id, str(r.employer_id)),
-                "rule_type": getattr(r.rule_type, "value", str(r.rule_type)),
-                "unit": getattr(r.unit, "value", str(r.unit)),
-                "value": str(r.value),
-                "notes": getattr(r, "notes", None) or "",
-            })
+            out.append(
+                {
+                    "employer_name": emp_by_id.get(r.employer_id, str(r.employer_id)),
+                    "rule_type": getattr(r.rule_type, "value", str(r.rule_type)),
+                    "unit": getattr(r.unit, "value", str(r.unit)),
+                    "value": str(r.value),
+                    "notes": getattr(r, "notes", None) or "",
+                }
+            )
         return out
 
     def _export_categories(self, uow) -> list[dict]:
@@ -317,17 +469,19 @@ class ExportService:
         acc_by_id = {a.id: a.label for a in uow.accounts.list_all()}
         out = []
         for r in uow.income_fixed.list_for_period(year, month):
-            out.append({
-                "employer_name": emp_by_id.get(r.employer_id, str(r.employer_id)),
-                "year": r.year,
-                "month": r.month,
-                "base_amount": str(r.base_amount),
-                "special_amount": str(r.special_amount),
-                "actual_amount": str(r.actual_amount),
-                "payout_timing": getattr(r.payout_timing, "value", str(r.payout_timing)),
-                "account_label": acc_by_id.get(r.account_id, ""),
-                "notes": r.notes or "",
-            })
+            out.append(
+                {
+                    "employer_name": emp_by_id.get(r.employer_id, str(r.employer_id)),
+                    "year": r.year,
+                    "month": r.month,
+                    "base_amount": str(r.base_amount),
+                    "special_amount": str(r.special_amount),
+                    "actual_amount": str(r.actual_amount),
+                    "payout_timing": getattr(r.payout_timing, "value", str(r.payout_timing)),
+                    "account_label": acc_by_id.get(r.account_id, ""),
+                    "notes": r.notes or "",
+                }
+            )
         return out
 
     def _export_income_hourly(self, uow, year: int, month: int) -> list[dict]:
@@ -336,24 +490,28 @@ class ExportService:
         out = []
         for r in uow.income_hourly.list_for_period(year, month):
             # BW/BY legacy -> neutral export
-            hours_normal = (r.hours_normal or Decimal("0")) + (r.hours_bw or Decimal("0")) + (r.hours_by or Decimal("0"))
+            hours_normal = (
+                (r.hours_normal or Decimal("0")) + (r.hours_bw or Decimal("0")) + (r.hours_by or Decimal("0"))
+            )
             night = (r.night or Decimal("0")) + (r.night_bw or Decimal("0")) + (r.night_by or Decimal("0"))
             sunday = (r.sunday or Decimal("0")) + (r.sunday_bw or Decimal("0")) + (r.sunday_by or Decimal("0"))
-            out.append({
-                "employer_name": emp_by_id.get(r.employer_id, str(r.employer_id)),
-                "year": r.year,
-                "month": r.month,
-                "hours_normal": str(hours_normal),
-                "night": str(night),
-                "sunday": str(sunday),
-                "holiday": str(r.holiday or Decimal("0")),
-                "overtime": str(r.overtime or Decimal("0")),
-                "special_amount": str(r.special_amount),
-                "actual_amount": str(r.actual_amount),
-                "payout_timing": getattr(r.payout_timing, "value", str(r.payout_timing)),
-                "account_label": acc_by_id.get(r.account_id, ""),
-                "notes": r.notes or "",
-            })
+            out.append(
+                {
+                    "employer_name": emp_by_id.get(r.employer_id, str(r.employer_id)),
+                    "year": r.year,
+                    "month": r.month,
+                    "hours_normal": str(hours_normal),
+                    "night": str(night),
+                    "sunday": str(sunday),
+                    "holiday": str(r.holiday or Decimal("0")),
+                    "overtime": str(r.overtime or Decimal("0")),
+                    "special_amount": str(r.special_amount),
+                    "actual_amount": str(r.actual_amount),
+                    "payout_timing": getattr(r.payout_timing, "value", str(r.payout_timing)),
+                    "account_label": acc_by_id.get(r.account_id, ""),
+                    "notes": r.notes or "",
+                }
+            )
         return out
 
     def _export_expense_recurring(self, uow) -> list[dict]:
@@ -361,19 +519,25 @@ class ExportService:
         acc_by_id = {a.id: a.label for a in uow.accounts.list_all()}
         out = []
         for r in uow.expense_recurring.list_all():
-            out.append({
-                "name": r.name,
-                "category_name": cat_by_id.get(r.category_id, str(r.category_id)),
-                "amount": str(r.amount),
-                "frequency_months": r.frequency_months,
-                "due_day": r.due_day,
-                "anchor_month": r.anchor_month or "",
-                "status": getattr(r.status, "value", str(r.status)),
-                "account_label": acc_by_id.get(r.account_id, ""),
-                "pay_bucket": getattr(r.pay_bucket, "value", str(r.pay_bucket)),
-                "allocation_override": (getattr(r.allocation_override, "value", str(r.allocation_override)) if r.allocation_override else ""),
-                "notes": r.notes or "",
-            })
+            out.append(
+                {
+                    "name": r.name,
+                    "category_name": cat_by_id.get(r.category_id, str(r.category_id)),
+                    "amount": str(r.amount),
+                    "frequency_months": r.frequency_months,
+                    "due_day": r.due_day,
+                    "anchor_month": r.anchor_month or "",
+                    "status": getattr(r.status, "value", str(r.status)),
+                    "account_label": acc_by_id.get(r.account_id, ""),
+                    "pay_bucket": getattr(r.pay_bucket, "value", str(r.pay_bucket)),
+                    "allocation_override": (
+                        getattr(r.allocation_override, "value", str(r.allocation_override))
+                        if r.allocation_override
+                        else ""
+                    ),
+                    "notes": r.notes or "",
+                }
+            )
         return out
 
     def _export_expense_variable(self, uow, year: int, month: int) -> list[dict]:
@@ -381,49 +545,57 @@ class ExportService:
         acc_by_id = {a.id: a.label for a in uow.accounts.list_all()}
         out = []
         for r in uow.expense_variable.list_for_period(year, month):
-            out.append({
-                "name": r.name,
-                "category_name": cat_by_id.get(r.category_id, str(r.category_id)),
-                "amount": str(r.amount),
-                "year": r.year,
-                "month": r.month,
-                "status": getattr(r.status, "value", str(r.status)),
-                "account_label": acc_by_id.get(r.account_id, ""),
-                "pay_bucket": getattr(r.pay_bucket, "value", str(r.pay_bucket)),
-                "notes": r.notes or "",
-            })
+            out.append(
+                {
+                    "name": r.name,
+                    "category_name": cat_by_id.get(r.category_id, str(r.category_id)),
+                    "amount": str(r.amount),
+                    "year": r.year,
+                    "month": r.month,
+                    "status": getattr(r.status, "value", str(r.status)),
+                    "account_label": acc_by_id.get(r.account_id, ""),
+                    "pay_bucket": getattr(r.pay_bucket, "value", str(r.pay_bucket)),
+                    "notes": r.notes or "",
+                }
+            )
         return out
 
     def _export_loans(self, uow) -> list[dict]:
         acc_by_id = {a.id: a.label for a in uow.accounts.list_all()}
         out = []
         for loan in uow.loans.list_all():
-            out.append({
-                "name": loan.name,
-                "start_date": str(loan.start_date),
-                "principal_initial": str(loan.principal_initial),
-                "annual_interest_rate": str(loan.annual_interest_rate),
-                "regular_payment": str(loan.regular_payment),
-                "payment_timing": getattr(loan.payment_timing, "value", str(loan.payment_timing)),
-                "account_label": acc_by_id.get(loan.account_id, ""),
-                "status": getattr(loan.status, "value", str(loan.status)),
-                "notes": loan.notes or "",
-            })
+            out.append(
+                {
+                    "name": loan.name,
+                    "start_date": str(loan.start_date),
+                    "principal_initial": str(loan.principal_initial),
+                    "annual_interest_rate": str(loan.annual_interest_rate),
+                    "regular_payment": str(loan.regular_payment),
+                    "payment_timing": getattr(loan.payment_timing, "value", str(loan.payment_timing)),
+                    "account_label": acc_by_id.get(loan.account_id, ""),
+                    "status": getattr(loan.status, "value", str(loan.status)),
+                    "notes": loan.notes or "",
+                }
+            )
         return out
 
     def _export_loan_events(self, uow) -> list[dict]:
         loan_by_id = {loan.id: loan.name for loan in uow.loans.list_all()}
         out = []
         for e in uow.loan_events.list_all():
-            out.append({
-                "loan_name": loan_by_id.get(e.loan_id, str(e.loan_id)),
-                "event_date": str(e.event_date),
-                "year": e.year,
-                "month": e.month,
-                "event_type": getattr(e.event_type, "value", str(e.event_type)),
-                "amount": (str(e.amount) if e.amount is not None else ""),
-                "new_regular_payment": (str(e.new_regular_payment) if e.new_regular_payment is not None else ""),
-                "new_annual_interest_rate": (str(e.new_annual_interest_rate) if e.new_annual_interest_rate is not None else ""),
-                "notes": e.notes or "",
-            })
+            out.append(
+                {
+                    "loan_name": loan_by_id.get(e.loan_id, str(e.loan_id)),
+                    "event_date": str(e.event_date),
+                    "year": e.year,
+                    "month": e.month,
+                    "event_type": getattr(e.event_type, "value", str(e.event_type)),
+                    "amount": (str(e.amount) if e.amount is not None else ""),
+                    "new_regular_payment": (str(e.new_regular_payment) if e.new_regular_payment is not None else ""),
+                    "new_annual_interest_rate": (
+                        str(e.new_annual_interest_rate) if e.new_annual_interest_rate is not None else ""
+                    ),
+                    "notes": e.notes or "",
+                }
+            )
         return out

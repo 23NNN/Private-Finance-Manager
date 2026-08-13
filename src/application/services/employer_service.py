@@ -117,7 +117,9 @@ class EmployerService:
             for other in uow.pay_rules.list_by_employer_and_type(dto.employer_id, PayRuleType(dto.rule_type)):
                 if dto.id and other.id == dto.id:
                     continue
-                if not _overlaps(getattr(other, "valid_from", None), getattr(other, "valid_to", None), new_from, new_to):
+                if not _overlaps(
+                    getattr(other, "valid_from", None), getattr(other, "valid_to", None), new_from, new_to
+                ):
                     continue
 
                 other_from = _norm_from(getattr(other, "valid_from", None))
@@ -131,8 +133,7 @@ class EmployerService:
                     new_to = cap if (new_to is None or new_to > cap) else new_to
                 else:
                     raise ValueError(
-                        "Overlapping rule found. Please adjust 'Valid from/to' "
-                        "so that the date ranges do not overlap."
+                        "Overlapping rule found. Please adjust 'Valid from/to' so that the date ranges do not overlap."
                     )
 
             obj.employer_id = dto.employer_id
@@ -189,7 +190,9 @@ class EmployerService:
             for other in uow.savings_rules.list_by_employer(dto.employer_id):
                 if dto.id and other.id == dto.id:
                     continue
-                if not _overlaps(getattr(other, "valid_from", None), getattr(other, "valid_to", None), new_from, new_to):
+                if not _overlaps(
+                    getattr(other, "valid_from", None), getattr(other, "valid_to", None), new_from, new_to
+                ):
                     continue
 
                 other_from = _norm_from(getattr(other, "valid_from", None))

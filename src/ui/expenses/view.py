@@ -70,17 +70,17 @@ class ExpensesView(ttk.Frame):
         self.loan_timing_var = tk.StringVar(value=self._all_label)
         self.loan_only_relevant_var = tk.BooleanVar(value=True)
 
-        ttk.Label(fl, text=f'{tr("common.status")}:').pack(side="left", padx=(8, 4), pady=4)
+        ttk.Label(fl, text=f"{tr('common.status')}:").pack(side="left", padx=(8, 4), pady=4)
         self.loan_status_filter = ttk.Combobox(fl, textvariable=self.loan_status_var, state="readonly", width=12)
         self.loan_status_filter["values"] = (self._all_label, tr("status.active"), tr("status.closed"))
         self.loan_status_filter.pack(side="left", pady=4)
 
-        ttk.Label(fl, text=f'{tr("common.account")}:').pack(side="left", padx=(12, 4), pady=4)
+        ttk.Label(fl, text=f"{tr('common.account')}:").pack(side="left", padx=(12, 4), pady=4)
         self.loan_account_filter = ttk.Combobox(fl, textvariable=self.loan_account_var, state="readonly", width=28)
         self.loan_account_filter["values"] = (self._all_label,)
         self.loan_account_filter.pack(side="left", pady=4)
 
-        ttk.Label(fl, text=f'{tr("common.timing")}:').pack(side="left", padx=(12, 4), pady=4)
+        ttk.Label(fl, text=f"{tr('common.timing')}:").pack(side="left", padx=(12, 4), pady=4)
         self.loan_timing_filter = ttk.Combobox(fl, textvariable=self.loan_timing_var, state="readonly", width=10)
         self.loan_timing_filter["values"] = (self._all_label, tr("timing.beginning"), tr("timing.mid"))
         self.loan_timing_filter.pack(side="left", pady=4)
@@ -154,22 +154,22 @@ class ExpensesView(ttk.Frame):
         self.rec_category_var = tk.StringVar(value=self._all_label)
         self.rec_freq_var = tk.StringVar(value=self._all_label)
 
-        ttk.Label(fr, text=f'{tr("common.status")}:').pack(side="left", padx=(8, 4), pady=4)
+        ttk.Label(fr, text=f"{tr('common.status')}:").pack(side="left", padx=(8, 4), pady=4)
         self.rec_status_filter = ttk.Combobox(fr, textvariable=self.rec_status_var, state="readonly", width=12)
         self.rec_status_filter["values"] = (self._all_label, tr("status.active"), tr("status.inactive"))
         self.rec_status_filter.pack(side="left", pady=4)
 
-        ttk.Label(fr, text=f'{tr("common.account")}:').pack(side="left", padx=(12, 4), pady=4)
+        ttk.Label(fr, text=f"{tr('common.account')}:").pack(side="left", padx=(12, 4), pady=4)
         self.rec_account_filter = ttk.Combobox(fr, textvariable=self.rec_account_var, state="readonly", width=28)
         self.rec_account_filter["values"] = (self._all_label,)
         self.rec_account_filter.pack(side="left", pady=4)
 
-        ttk.Label(fr, text=f'{tr("common.category")}:').pack(side="left", padx=(12, 4), pady=4)
+        ttk.Label(fr, text=f"{tr('common.category')}:").pack(side="left", padx=(12, 4), pady=4)
         self.rec_category_filter = ttk.Combobox(fr, textvariable=self.rec_category_var, state="readonly", width=28)
         self.rec_category_filter["values"] = (self._all_label,)
         self.rec_category_filter.pack(side="left", pady=4)
 
-        ttk.Label(fr, text=f'{tr("expenses.recurring.col.frequency")}:').pack(side="left", padx=(12, 4), pady=4)
+        ttk.Label(fr, text=f"{tr('expenses.recurring.col.frequency')}:").pack(side="left", padx=(12, 4), pady=4)
         self.rec_freq_filter = ttk.Combobox(fr, textvariable=self.rec_freq_var, state="readonly", width=10)
         self.rec_freq_filter["values"] = (self._all_label,)
         self.rec_freq_filter.pack(side="left", pady=4)
@@ -220,17 +220,22 @@ class ExpensesView(ttk.Frame):
         self.var_account_var = tk.StringVar(value=self._all_label)
         self.var_category_var = tk.StringVar(value=self._all_label)
 
-        ttk.Label(fv, text=f'{tr("common.status")}:').pack(side="left", padx=(8, 4), pady=4)
+        ttk.Label(fv, text=f"{tr('common.status')}:").pack(side="left", padx=(8, 4), pady=4)
         self.var_status_filter = ttk.Combobox(fv, textvariable=self.var_status_var, state="readonly", width=12)
-        self.var_status_filter["values"] = (self._all_label, tr("status.open"), tr("status.paid"), tr("status.cancelled"))
+        self.var_status_filter["values"] = (
+            self._all_label,
+            tr("status.open"),
+            tr("status.paid"),
+            tr("status.cancelled"),
+        )
         self.var_status_filter.pack(side="left", pady=4)
 
-        ttk.Label(fv, text=f'{tr("common.account")}:').pack(side="left", padx=(12, 4), pady=4)
+        ttk.Label(fv, text=f"{tr('common.account')}:").pack(side="left", padx=(12, 4), pady=4)
         self.var_account_filter = ttk.Combobox(fv, textvariable=self.var_account_var, state="readonly", width=28)
         self.var_account_filter["values"] = (self._all_label,)
         self.var_account_filter.pack(side="left", pady=4)
 
-        ttk.Label(fv, text=f'{tr("common.category")}:').pack(side="left", padx=(12, 4), pady=4)
+        ttk.Label(fv, text=f"{tr('common.category')}:").pack(side="left", padx=(12, 4), pady=4)
         self.var_category_filter = ttk.Combobox(fv, textvariable=self.var_category_var, state="readonly", width=28)
         self.var_category_filter["values"] = (self._all_label,)
         self.var_category_filter.pack(side="left", pady=4)

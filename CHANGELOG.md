@@ -6,6 +6,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.2.5] — 2026-08-13
+
+### Changed
+
+- **E501 (line-too-long) reflow**: All 617 pre-existing line-length findings (511 of them in
+  `schema_patch.py`'s i18n seed dict alone) resolved via `ruff format`, applied in 5 file-scoped
+  commits to keep each diff reviewable. The dozen lines `ruff format` couldn't wrap on its own
+  (long translated strings, id/label f-strings) were either marked `# noqa: E501` with a reason
+  (translated text) or refactored into named local variables (expressions in UI presenter code).
+  CI's `ruff check .` no longer needs `--ignore E501` — the only remaining exclusion is
+  `src/security/` (AI-edit-locked, tracked separately for manual maintainer cleanup).
+
+### Known Issues
+
+- Requested but not completed: adding CI as a **required status check** on the existing GitHub
+  ruleset `main-protection`. `gh api PATCH` on the ruleset endpoint returns 404 with the current
+  OAuth token (scope `repo`) even though `GET` on the same URL works — likely needs
+  `Administration: write`, which classic OAuth scopes don't grant for the newer Rulesets API.
+  Needs either a manual change via the GitHub UI or a fine-grained PAT with that permission.
+
 ## [1.2.4] — 2026-08-13
 
 ### Fixed

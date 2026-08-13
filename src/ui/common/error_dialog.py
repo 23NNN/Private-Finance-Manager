@@ -77,7 +77,9 @@ class ErrorDialog(tk.Toplevel):
                 e.insert(0, str(db_path))
                 e.configure(state="readonly")
                 e.pack(side="left", fill="x", expand=True, padx=(0, 6))
-                ttk.Button(row, text=tr("common.open_in_explorer"), command=lambda: _open_in_explorer_select(db_path)).pack(side="left")
+                ttk.Button(
+                    row, text=tr("common.open_in_explorer"), command=lambda: _open_in_explorer_select(db_path)
+                ).pack(side="left")
 
             if log_path:
                 row = ttk.Frame(pf)
@@ -87,8 +89,12 @@ class ErrorDialog(tk.Toplevel):
                 e.insert(0, str(log_path))
                 e.configure(state="readonly")
                 e.pack(side="left", fill="x", expand=True, padx=(0, 6))
-                ttk.Button(row, text=tr("common.open_in_explorer"), command=lambda: _open_in_explorer_select(log_path)).pack(side="left")
-                ttk.Button(row, text=tr("common.open_log"), command=lambda: _open_path(log_path)).pack(side="left", padx=(6, 0))
+                ttk.Button(
+                    row, text=tr("common.open_in_explorer"), command=lambda: _open_in_explorer_select(log_path)
+                ).pack(side="left")
+                ttk.Button(row, text=tr("common.open_log"), command=lambda: _open_path(log_path)).pack(
+                    side="left", padx=(6, 0)
+                )
 
         # Details (collapsible)
         self._details_frame = ttk.LabelFrame(root, text=tr("error.details"))
@@ -146,7 +152,9 @@ def show_error(
     log_path: Path | None = None,
     db_path: Path | None = None,
 ) -> None:
-    ErrorDialog(parent, title, message, details=details, log_path=log_path, db_path=db_path, severity="ERROR").wait_window()
+    ErrorDialog(
+        parent, title, message, details=details, log_path=log_path, db_path=db_path, severity="ERROR"
+    ).wait_window()
 
 
 def show_warning(
@@ -158,4 +166,6 @@ def show_warning(
     log_path: Path | None = None,
     db_path: Path | None = None,
 ) -> None:
-    ErrorDialog(parent, title, message, details=details, log_path=log_path, db_path=db_path, severity="WARN").wait_window()
+    ErrorDialog(
+        parent, title, message, details=details, log_path=log_path, db_path=db_path, severity="WARN"
+    ).wait_window()

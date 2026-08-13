@@ -27,6 +27,7 @@ UI_RULE_TYPES: list[str] = [e.value for e in PayRuleType]
 
 logger = logging.getLogger(__name__)
 
+
 def _bind_row_double_click(tree, fn) -> None:
     """Binds double-click on a row (not on the header).
 
@@ -44,6 +45,7 @@ def _bind_row_double_click(tree, fn) -> None:
 
     tree.bind("<Double-1>", _h, add="+")
 
+
 try:
     from src.config.settings import get_settings
     from src.ui.common.error_dialog import show_error, show_warning
@@ -56,28 +58,36 @@ except Exception:  # pragma: no cover
     def show_warning(_parent, title, msg, **_kw):
         messagebox.showwarning(title, msg)
 
+
 def _fmt2(x) -> str:
     try:
         return f"{Decimal(x or 0):.2f}"
     except Exception:
         return "0.00"
 
+
 def _norm_from(d: date | None) -> date:
     return d or date(1900, 1, 1)
+
 
 def _to_inf(d: date | None) -> date:
     return d or date.max
 
+
 def _active_for(d_from: date | None, d_to: date | None, at: date) -> bool:
     return _norm_from(d_from) <= at <= _to_inf(d_to)
 
+
 TIMING_CODES = ("BEGINNING", "MID")
+
 
 def timing_label(code: str) -> str:
     return tr(f"timing.{code.lower()}")
 
+
 def timing_values() -> list[str]:
     return [timing_label(c) for c in TIMING_CODES]
+
 
 def timing_code(label: str) -> str:
     m = {timing_label(c): c for c in TIMING_CODES}
@@ -94,11 +104,14 @@ RULE_TYPE_TO_KEY = {
 }
 RULE_TYPE_CODES = tuple(RULE_TYPE_TO_KEY.keys())
 
+
 def rule_type_label(code: str) -> str:
     return tr(RULE_TYPE_TO_KEY.get(code, code))
 
+
 def rule_type_values() -> list[str]:
     return [rule_type_label(c) for c in RULE_TYPE_CODES]
+
 
 def rule_type_code(label: str) -> str:
     m = {rule_type_label(c): c for c in RULE_TYPE_CODES}
@@ -112,11 +125,14 @@ UNIT_TO_KEY = {
 }
 UNIT_CODES = tuple(UNIT_TO_KEY.keys())
 
+
 def unit_label(code: str) -> str:
     return tr(UNIT_TO_KEY.get(code, code))
 
+
 def unit_values() -> list[str]:
     return [unit_label(c) for c in UNIT_CODES]
+
 
 def unit_code(label: str) -> str:
     m = {unit_label(c): c for c in UNIT_CODES}
@@ -502,9 +518,12 @@ class IncomePresenter:
                 pass
 
         if existing:
+            employer_name = next(
+                (e.name for e in self._employers if e.id == existing.employer_id), existing.employer_id
+            )
             initial.update(
                 {
-                    "employer": f"{existing.employer_id}:{next((e.name for e in self._employers if e.id == existing.employer_id), existing.employer_id)}",
+                    "employer": f"{existing.employer_id}:{employer_name}",
                     "base_amount": _fmt2(existing.base_amount),
                     "special_amount": _fmt2(existing.special_amount),
                     "actual_amount": _fmt2(existing.actual_amount),
@@ -643,13 +662,28 @@ class IncomePresenter:
                 pass
 
         if existing:
-            hours = (existing.hours_normal or Decimal("0")) + (existing.hours_bw or Decimal("0")) + (existing.hours_by or Decimal("0"))
-            night = (existing.night or Decimal("0")) + (existing.night_bw or Decimal("0")) + (existing.night_by or Decimal("0"))
-            sunday = (existing.sunday or Decimal("0")) + (existing.sunday_bw or Decimal("0")) + (existing.sunday_by or Decimal("0"))
+            hours = (
+                (existing.hours_normal or Decimal("0"))
+                + (existing.hours_bw or Decimal("0"))
+                + (existing.hours_by or Decimal("0"))
+            )
+            night = (
+                (existing.night or Decimal("0"))
+                + (existing.night_bw or Decimal("0"))
+                + (existing.night_by or Decimal("0"))
+            )
+            sunday = (
+                (existing.sunday or Decimal("0"))
+                + (existing.sunday_bw or Decimal("0"))
+                + (existing.sunday_by or Decimal("0"))
+            )
 
+            employer_name = next(
+                (e.name for e in self._employers if e.id == existing.employer_id), existing.employer_id
+            )
             initial.update(
                 {
-                    "employer": f"{existing.employer_id}:{next((e.name for e in self._employers if e.id == existing.employer_id), existing.employer_id)}",
+                    "employer": f"{existing.employer_id}:{employer_name}",
                     "hours": _fmt2(hours),
                     "night": _fmt2(night),
                     "sunday": _fmt2(sunday),
@@ -793,6 +827,7 @@ class IncomePresenter:
 
         from src.ui.common.dialogs import FieldSpec, FormDialog
         from src.ui.common.validation import ui_int
+
         fields = [
             FieldSpec("year", tr("expenses.variable.move.year"), "entry", required=True, validator=ui_int, width=8),
             FieldSpec(
@@ -849,9 +884,13 @@ class IncomePresenter:
         specs = [
             FieldSpec("name", tr("income.special.field.name"), "entry", required=True, width=44),
             FieldSpec("amount", tr("income.special.field.amount"), "entry", required=True, validator=ui_decimal),
-            FieldSpec("actual_amount", tr("income.special.field.actual"), "entry", required=False, validator=ui_decimal),
+            FieldSpec(
+                "actual_amount", tr("income.special.field.actual"), "entry", required=False, validator=ui_decimal
+            ),
             FieldSpec("payout_timing", tr("income.label.payout"), "combo", required=True, values=timing_values()),
-            FieldSpec("account", tr("income.label.account"), "combo", required=False, values=[""] + self._acc_vals(), width=44),
+            FieldSpec(
+                "account", tr("income.label.account"), "combo", required=False, values=[""] + self._acc_vals(), width=44
+            ),
             FieldSpec("notes", tr("common.notes"), "text", required=False, width=50, height=1),
         ]
         dlg = FormDialog(self._view, tr("income.dialog.special.title"), specs=specs, initial=initial)
@@ -946,12 +985,20 @@ class IncomePresenter:
         }
         if existing and existing.default_account_id:
             acc_label = {a.id: a.label for a in self._accounts}
-            initial["default_account"] = f"{existing.default_account_id}:{acc_label.get(existing.default_account_id, existing.default_account_id)}"
+            account_name = acc_label.get(existing.default_account_id, existing.default_account_id)
+            initial["default_account"] = f"{existing.default_account_id}:{account_name}"
 
         specs = [
             FieldSpec("name", tr("income.employer.field.name"), "entry", required=True, width=40),
             FieldSpec("payout_timing", tr("income.label.payout"), "combo", required=True, values=timing_values()),
-            FieldSpec("default_account", tr("income.employer.field.default_account"), "combo", required=False, values=[""] + self._acc_vals(), width=44),
+            FieldSpec(
+                "default_account",
+                tr("income.employer.field.default_account"),
+                "combo",
+                required=False,
+                values=[""] + self._acc_vals(),
+                width=44,
+            ),
             FieldSpec("notes", tr("common.notes"), "text", required=False, width=50, height=1),
         ]
         dlg = FormDialog(self._view, tr("income.dialog.employer.title"), specs=specs, initial=initial)
@@ -1059,7 +1106,14 @@ class IncomePresenter:
             "notes": existing.notes or "" if existing else "",
         }
         specs = [
-            FieldSpec("rule_type", tr("income.rule.field.rule_type"), "combo", required=True, values=rule_type_values(), width=28),
+            FieldSpec(
+                "rule_type",
+                tr("income.rule.field.rule_type"),
+                "combo",
+                required=True,
+                values=rule_type_values(),
+                width=28,
+            ),
             FieldSpec("unit", tr("income.label.unit"), "combo", required=True, values=unit_values(), width=28),
             FieldSpec("value", tr("income.rule.field.value"), "entry", required=True, validator=ui_decimal),
             FieldSpec("valid_from", tr("income.rule.field.valid_from"), "entry", required=False, width=16),
@@ -1072,7 +1126,9 @@ class IncomePresenter:
             return
 
         try:
-            vf = parse_date(str(data.get("valid_from", "")).strip()) if str(data.get("valid_from", "")).strip() else None
+            vf = (
+                parse_date(str(data.get("valid_from", "")).strip()) if str(data.get("valid_from", "")).strip() else None
+            )
             vt = parse_date(str(data.get("valid_to", "")).strip()) if str(data.get("valid_to", "")).strip() else None
             dto = PayRuleDTO(
                 id=existing.id if existing else None,
@@ -1179,7 +1235,9 @@ class IncomePresenter:
             if pct > 1:
                 pct = pct / Decimal("100")
 
-            vf = parse_date(str(data.get("valid_from", "")).strip()) if str(data.get("valid_from", "")).strip() else None
+            vf = (
+                parse_date(str(data.get("valid_from", "")).strip()) if str(data.get("valid_from", "")).strip() else None
+            )
             vt = parse_date(str(data.get("valid_to", "")).strip()) if str(data.get("valid_to", "")).strip() else None
 
             dto = SavingsRuleDTO(
@@ -1195,4 +1253,3 @@ class IncomePresenter:
         except Exception as e:
             logger.exception("upsert_savings_rule failed")
             self._err(tr("common.error"), trf("income.error.save_savings_rule_failed", error=e))
-

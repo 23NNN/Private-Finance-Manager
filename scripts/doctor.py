@@ -317,7 +317,9 @@ class Doctor:
                 ambiguous_add.add(rel)
 
         if missing_add:
-            msg = "Fehlendes add='+' bei <Double-1> Bindings in:\n" + "\n".join([f"  - {p}" for p in sorted(missing_add)])
+            msg = "Fehlendes add='+' bei <Double-1> Bindings in:\n" + "\n".join(
+                [f"  - {p}" for p in sorted(missing_add)]
+            )
             if self.strict:
                 self.err("UI Binding Override Risiko", msg)
             else:
@@ -326,7 +328,9 @@ class Doctor:
             self.ok("UI Binding Override Risiko", "Keine <Double-1> Bindings ohne add= gefunden")
 
         if ambiguous_add:
-            msg = "add= vorhanden, aber nicht eindeutig '+' (ok, falls Variable '+'):\n" + "\n".join([f"  - {p}" for p in sorted(ambiguous_add)])
+            msg = "add= vorhanden, aber nicht eindeutig '+' (ok, falls Variable '+'):\n" + "\n".join(
+                [f"  - {p}" for p in sorted(ambiguous_add)]
+            )
             self.warn("UI Binding add uneindeutig", msg)
         else:
             self.ok("UI Binding add uneindeutig", "Alle <Double-1> Bindings nutzen add='+' (oder sind nicht vorhanden)")
@@ -360,7 +364,11 @@ class Doctor:
                 for sub in ast.walk(node):
                     if isinstance(sub, ast.Assign):
                         for tgt in sub.targets:
-                            if isinstance(tgt, ast.Attribute) and isinstance(tgt.value, ast.Name) and tgt.value.id == "self":
+                            if (
+                                isinstance(tgt, ast.Attribute)
+                                and isinstance(tgt.value, ast.Name)
+                                and tgt.value.id == "self"
+                            ):
                                 attrs.add(tgt.attr)
 
                 # Von tk.Widget/tk.Toplevel/tk.Misc geerbte Methoden werden nie explizit
@@ -374,14 +382,22 @@ class Doctor:
                         if kw.arg not in {"command", "postcommand"}:
                             continue
                         val = kw.value
-                        if isinstance(val, ast.Attribute) and isinstance(val.value, ast.Name) and val.value.id == "self":
+                        if (
+                            isinstance(val, ast.Attribute)
+                            and isinstance(val.value, ast.Name)
+                            and val.value.id == "self"
+                        ):
                             if val.attr not in allowed:
                                 problems.add(f"{rel}: {node.name} -> fehlender Callback '{val.attr}' (command=)")
 
                     # positional: .bind(..., self.foo)
                     if isinstance(call.func, ast.Attribute) and call.func.attr == "bind" and len(call.args) >= 2:
                         val = call.args[1]
-                        if isinstance(val, ast.Attribute) and isinstance(val.value, ast.Name) and val.value.id == "self":
+                        if (
+                            isinstance(val, ast.Attribute)
+                            and isinstance(val.value, ast.Name)
+                            and val.value.id == "self"
+                        ):
                             if val.attr not in allowed:
                                 problems.add(f"{rel}: {node.name} -> fehlender Callback '{val.attr}' (bind)")
 
