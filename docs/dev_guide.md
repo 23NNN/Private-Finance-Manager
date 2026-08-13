@@ -138,8 +138,10 @@ without `.git`, `.venv`, `dist/`, `build`.
 
 ### Add/change a UI label or text
 1. Find `tr("key")` call in `src/ui/<module>/view.py`
-2. Add key seed to `src/infrastructure/db/migrations/schema_patch.py` (all 5 langs)
-3. Run `python scripts/i18n_audit.py` to verify
+2. Add key seed to `src/infrastructure/db/migrations/schema_patch.py` (all 5 langs — real
+   translations, not English placeholders for fr/es/it)
+3. Run `python scripts/i18n_audit.py` (missing `tr()` wrapping) and
+   `python scripts/i18n_seed_audit.py` (untranslated seed values) to verify
 
 ### Add a new field to Expenses / Income / Accounts
 1. `src/infrastructure/db/orm_models.py` – add column
@@ -157,8 +159,8 @@ without `.git`, `.venv`, `dist/`, `build`.
 → `src/ui/common/dialogs.py` (generic) OR `src/ui/<module>/view.py` (module-specific)
 
 ### Add a new i18n translation key
-→ Add seed in `src/infrastructure/db/migrations/schema_patch.py` (5 langs)
-→ Run `python scripts/i18n_audit.py`
+→ Add seed in `src/infrastructure/db/migrations/schema_patch.py` (5 langs, real translations)
+→ Run `python scripts/i18n_audit.py` and `python scripts/i18n_seed_audit.py`
 
 ### Change CSV/Excel import behavior
 → Excel: `src/application/importers/excel_importer.py` (covers all datasets)
