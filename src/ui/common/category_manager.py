@@ -31,7 +31,11 @@ class CategoryManagerDialog(tk.Toplevel):
 
         self._ref = ref_service
 
-        group_items = [("FIX", _group_label("FIX")), ("VARIABLE", _group_label("VARIABLE")), ("LOAN", _group_label("LOAN"))]
+        group_items = [
+            ("FIX", _group_label("FIX")),
+            ("VARIABLE", _group_label("VARIABLE")),
+            ("LOAN", _group_label("LOAN")),
+        ]
         self._group_labels = [label for _code, label in group_items]
         self._label_to_group = {label: code for code, label in group_items}
 
@@ -82,7 +86,9 @@ class CategoryManagerDialog(tk.Toplevel):
             FieldSpec("name", tr("common.name"), "entry", required=True, width=40),
             FieldSpec("group_ui", tr("common.group"), "combo", required=True, values=self._group_labels),
         ]
-        dlg = FormDialog(self, tr("category_manager.dialog.new.title"), fields, initial={"group_ui": _group_label("VARIABLE")})
+        dlg = FormDialog(
+            self, tr("category_manager.dialog.new.title"), fields, initial={"group_ui": _group_label("VARIABLE")}
+        )
         data = dlg.show()
         if not data:
             return

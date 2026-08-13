@@ -323,7 +323,7 @@ class ExpensesPresenter:
             period = self._view.get_period()
             filters = self._view.get_filters() if hasattr(self._view, "get_filters") else {}
 
-            f_rec = (filters.get("recurring") or {})
+            f_rec = filters.get("recurring") or {}
             rec_status_ui = (f_rec.get("status") or self._all_label()).strip()
             rec_acc_id = self._parse_id_choice(f_rec.get("account") or "")
             rec_cat_id = self._parse_id_choice(f_rec.get("category") or "")
@@ -376,7 +376,7 @@ class ExpensesPresenter:
                 )
 
             # -------------------- Variable --------------------
-            f_var = (filters.get("variable") or {})
+            f_var = filters.get("variable") or {}
             var_status_ui = (f_var.get("status") or self._all_label()).strip()
             var_acc_id = self._parse_id_choice(f_var.get("account") or "")
             var_cat_id = self._parse_id_choice(f_var.get("category") or "")
@@ -436,7 +436,7 @@ class ExpensesPresenter:
                 )
 
             # -------------------- Loans --------------------
-            f_loan = (filters.get("loan") or {})
+            f_loan = filters.get("loan") or {}
             loan_status_ui = (f_loan.get("status") or self._all_label()).strip()
             loan_acc_id = self._parse_id_choice(f_loan.get("account") or "")
             loan_timing = self._parse_timing_ui(f_loan.get("timing") or "")
@@ -467,7 +467,9 @@ class ExpensesPresenter:
                         try:
                             eff = self._loan.get_effective_settings(loan.id, Period(y, m))
                             eff_acc_ids.add(
-                                int(eff.get("account_id")) if eff.get("account_id") is not None else getattr(loan, "account_id", None)
+                                int(eff.get("account_id"))
+                                if eff.get("account_id") is not None
+                                else getattr(loan, "account_id", None)
                             )
                             eff_timings.add(str(eff.get("payment_timing") or getattr(loan, "payment_timing", "MID")))
                         except Exception:
@@ -526,7 +528,9 @@ class ExpensesPresenter:
 
                     if only_relevant and _v(loan.status) == "CLOSED":
                         try:
-                            if hasattr(self._loan, "has_event_in_period") and not self._loan.has_event_in_period(loan.id, period):
+                            if hasattr(self._loan, "has_event_in_period") and not self._loan.has_event_in_period(
+                                loan.id, period
+                            ):
                                 continue
                         except Exception:
                             pass
@@ -538,7 +542,11 @@ class ExpensesPresenter:
                     except Exception:
                         eff = {}
 
-                    eff_acc_id = int(eff.get("account_id")) if eff.get("account_id") is not None else getattr(loan, "account_id", None)
+                    eff_acc_id = (
+                        int(eff.get("account_id"))
+                        if eff.get("account_id") is not None
+                        else getattr(loan, "account_id", None)
+                    )
                     eff_timing = str(eff.get("payment_timing") or getattr(loan, "payment_timing", "MID"))
 
                     if loan_acc_id is not None and eff_acc_id != loan_acc_id:
@@ -847,11 +855,15 @@ class ExpensesPresenter:
 
         fields = [
             FieldSpec("name", tr("expenses.recurring.field.name"), "entry", required=True, width=40),
-            FieldSpec("category", tr("expenses.recurring.field.category"), "combo", required=True, values=cat_vals, width=40),
+            FieldSpec(
+                "category", tr("expenses.recurring.field.category"), "combo", required=True, values=cat_vals, width=40
+            ),
             FieldSpec("amount", tr("expenses.recurring.field.amount"), "entry", required=True),
             FieldSpec("freq", tr("expenses.recurring.field.frequency_months"), "spin", required=True, from_=1, to=120),
             FieldSpec("due", tr("expenses.recurring.field.due_day"), "spin", required=True, from_=1, to=31),
-            FieldSpec("anchor_month", tr("expenses.recurring.field.anchor_month"), "spin", required=True, from_=1, to=12),
+            FieldSpec(
+                "anchor_month", tr("expenses.recurring.field.anchor_month"), "spin", required=True, from_=1, to=12
+            ),
             FieldSpec(
                 "status_ui",
                 tr("expenses.recurring.field.status"),
@@ -859,7 +871,9 @@ class ExpensesPresenter:
                 required=True,
                 values=[_code_to_ui(k, RECURRING_STATUS_KEYS) for k in RECURRING_STATUS_KEYS.keys()],
             ),
-            FieldSpec("account", tr("expenses.recurring.field.account"), "combo", required=False, values=acc_vals, width=40),
+            FieldSpec(
+                "account", tr("expenses.recurring.field.account"), "combo", required=False, values=acc_vals, width=40
+            ),
             FieldSpec(
                 "pay_bucket_ui",
                 tr("expenses.recurring.field.pay_bucket"),
@@ -957,7 +971,9 @@ class ExpensesPresenter:
 
         fields = [
             FieldSpec("name", tr("expenses.variable.field.name"), "entry", required=True, width=40),
-            FieldSpec("category", tr("expenses.variable.field.category"), "combo", required=True, values=cat_vals, width=40),
+            FieldSpec(
+                "category", tr("expenses.variable.field.category"), "combo", required=True, values=cat_vals, width=40
+            ),
             FieldSpec("amount", tr("expenses.variable.field.amount"), "entry", required=True),
             FieldSpec(
                 "status_ui",
@@ -966,7 +982,9 @@ class ExpensesPresenter:
                 required=True,
                 values=[_code_to_ui(k, VARIABLE_STATUS_KEYS) for k in VARIABLE_STATUS_KEYS.keys()],
             ),
-            FieldSpec("account", tr("expenses.variable.field.account"), "combo", required=False, values=acc_vals, width=40),
+            FieldSpec(
+                "account", tr("expenses.variable.field.account"), "combo", required=False, values=acc_vals, width=40
+            ),
             FieldSpec(
                 "pay_bucket_ui",
                 tr("expenses.variable.field.pay_bucket"),
@@ -1260,4 +1278,3 @@ class ExpensesPresenter:
         except Exception:
             logger.exception("_open_loan_event_dialog failed.")
             self._err(tr("common.error"), tr("expenses.error.save_event_failed"))
-

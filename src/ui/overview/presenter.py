@@ -46,7 +46,9 @@ class OverviewPresenter:
                 self._view.set_incomes("nxt", [], footer=(tr("common.total"), "0.00", "0.00", "0.00"))
                 self._view.set_accounts("nxt", [], footer=(tr("common.total"), "0.00", "", "0.00", ""))
                 self._view.set_loans("nxt", [], footer=(tr("common.total"), "", "0.00", "0.00", ""))
-                self._view.set_payout_summary("nxt", [], footer=(tr("common.total"), "0.00", "0.00", "0.00", "0.00", "0.00"))
+                self._view.set_payout_summary(
+                    "nxt", [], footer=(tr("common.total"), "0.00", "0.00", "0.00", "0.00", "0.00")
+                )
                 self._view.set_period_data("nxt", savings_total="0.00", fix_total="0.00", var_total="0.00")
                 return
 
@@ -78,7 +80,9 @@ class OverviewPresenter:
         )
 
         incomes = [i for i in pvm.incomes if (i.calc_amount != 0) or (i.actual_amount != 0)]
-        incomes_rows = [(i.employer_name, _m(i.calc_amount), _m(i.actual_amount), _m(i.savings_amount)) for i in incomes]
+        incomes_rows = [
+            (i.employer_name, _m(i.calc_amount), _m(i.actual_amount), _m(i.savings_amount)) for i in incomes
+        ]
         inc_footer = (
             tr("common.total"),
             _m(sum((i.calc_amount for i in incomes), Decimal("0.00"))),
@@ -89,7 +93,13 @@ class OverviewPresenter:
 
         accounts = [a for a in pvm.accounts if (a.fix_amount != 0) or (a.variable_amount != 0)]
         acc_rows = [
-            (a.account_label, _m(a.fix_amount), f"{a.fix_share_pct:.2f}", _m(a.variable_amount), f"{a.variable_share_pct:.2f}")
+            (
+                a.account_label,
+                _m(a.fix_amount),
+                f"{a.fix_share_pct:.2f}",
+                _m(a.variable_amount),
+                f"{a.variable_share_pct:.2f}",
+            )
             for a in accounts
         ]
         acc_footer = (

@@ -131,27 +131,43 @@ class MainWindow:
             messagebox.showinfo(tr("lang.restart.title"), tr("lang.restart.msg"), parent=self.root)
             self._restart_app()
 
-        lang_menu.add_radiobutton(label=tr("lang.de"), variable=self._lang_var, value="de", command=lambda: _set_lang("de"))
-        lang_menu.add_radiobutton(label=tr("lang.en"), variable=self._lang_var, value="en", command=lambda: _set_lang("en"))
-        lang_menu.add_radiobutton(label=tr("lang.fr"), variable=self._lang_var, value="fr", command=lambda: _set_lang("fr"))
-        lang_menu.add_radiobutton(label=tr("lang.es"), variable=self._lang_var, value="es", command=lambda: _set_lang("es"))
-        lang_menu.add_radiobutton(label=tr("lang.it"), variable=self._lang_var, value="it", command=lambda: _set_lang("it"))
+        lang_menu.add_radiobutton(
+            label=tr("lang.de"), variable=self._lang_var, value="de", command=lambda: _set_lang("de")
+        )
+        lang_menu.add_radiobutton(
+            label=tr("lang.en"), variable=self._lang_var, value="en", command=lambda: _set_lang("en")
+        )
+        lang_menu.add_radiobutton(
+            label=tr("lang.fr"), variable=self._lang_var, value="fr", command=lambda: _set_lang("fr")
+        )
+        lang_menu.add_radiobutton(
+            label=tr("lang.es"), variable=self._lang_var, value="es", command=lambda: _set_lang("es")
+        )
+        lang_menu.add_radiobutton(
+            label=tr("lang.it"), variable=self._lang_var, value="it", command=lambda: _set_lang("it")
+        )
 
         # Appearance submenu
         appearance_menu = tk.Menu(m, tearoff=False)
         m.add_cascade(label=tr("menu.appearance"), menu=appearance_menu)
         self._appearance_var = tk.StringVar(value=ctk.get_appearance_mode().lower())
         appearance_menu.add_radiobutton(
-            label=tr("appearance.dark"), variable=self._appearance_var,
-            value="dark", command=lambda: self._set_appearance_mode("dark"),
+            label=tr("appearance.dark"),
+            variable=self._appearance_var,
+            value="dark",
+            command=lambda: self._set_appearance_mode("dark"),
         )
         appearance_menu.add_radiobutton(
-            label=tr("appearance.light"), variable=self._appearance_var,
-            value="light", command=lambda: self._set_appearance_mode("light"),
+            label=tr("appearance.light"),
+            variable=self._appearance_var,
+            value="light",
+            command=lambda: self._set_appearance_mode("light"),
         )
         appearance_menu.add_radiobutton(
-            label=tr("appearance.system"), variable=self._appearance_var,
-            value="system", command=lambda: self._set_appearance_mode("system"),
+            label=tr("appearance.system"),
+            variable=self._appearance_var,
+            value="system",
+            command=lambda: self._set_appearance_mode("system"),
         )
 
         file_menu.add_command(label=tr("menu.import.excel"), command=self.import_excel)
@@ -190,9 +206,7 @@ class MainWindow:
 
         self.overview_presenter = OverviewPresenter(self.overview_view, self.overview_svc)
 
-        self.income_presenter = IncomePresenter(
-            self.income_view, self.income_svc, self.ref_svc, self.employer_svc
-        )
+        self.income_presenter = IncomePresenter(self.income_view, self.income_svc, self.ref_svc, self.employer_svc)
 
         self.expenses_presenter = ExpensesPresenter(self.expenses_view, self.expense_svc, self.loan_svc, self.ref_svc)
         self.accounts_presenter = AccountsPresenter(self.accounts_view, self.account_svc, self.ref_svc)
@@ -209,6 +223,7 @@ class MainWindow:
         try:
             from src.infrastructure.repositories.app_settings import AppSettingRepository
             from src.infrastructure.unit_of_work import UnitOfWork
+
             with UnitOfWork() as uow:
                 AppSettingRepository(uow.session).set("ui.appearance_mode", mode)
                 uow.commit()
@@ -294,7 +309,13 @@ class MainWindow:
 
     def _run_in_worker(self, label: str, func, *args):
         if self._worker_running:
-            show_warning(self.root, tr("common.busy"), tr("common.operation_in_progress"), db_path=self.settings.db_path(), log_path=self.settings.log_path())
+            show_warning(
+                self.root,
+                tr("common.busy"),
+                tr("common.operation_in_progress"),
+                db_path=self.settings.db_path(),
+                log_path=self.settings.log_path(),
+            )
             return
 
         self._worker_running = True
@@ -387,7 +408,9 @@ class MainWindow:
             return
         try:
             result = self.backup_svc.backup_database(path)
-            messagebox.showinfo(tr("backup.success.title"), trf("backup.success.msg", path=result.backup_path), parent=self.root)
+            messagebox.showinfo(
+                tr("backup.success.title"), trf("backup.success.msg", path=result.backup_path), parent=self.root
+            )
         except Exception as exc:
             show_error(self.root, tr("common.error"), str(exc))
 
@@ -412,8 +435,12 @@ class MainWindow:
         self._run_in_worker(ftrf("import.excel.selected", path=path), self.import_svc.import_excel, path)
 
     def import_csv(self) -> None:
-        ds = DatasetDialog(self.root, tr("import.csv.title"), self.import_svc.CSV_DATASETS,
-                           labels=self._ds_labels(self.import_svc.CSV_DATASETS)).show()
+        ds = DatasetDialog(
+            self.root,
+            tr("import.csv.title"),
+            self.import_svc.CSV_DATASETS,
+            labels=self._ds_labels(self.import_svc.CSV_DATASETS),
+        ).show()
         if not ds:
             return
         path = filedialog.askopenfilename(
@@ -425,8 +452,12 @@ class MainWindow:
         self._run_in_worker(trf("io.import.worker_label", ds=ds, path=path), self.import_svc.import_csv, path, ds)
 
     def export_csv(self) -> None:
-        ds = DatasetDialog(self.root, tr("export.csv.title"), self.export_svc.DATASETS,
-                           labels=self._ds_labels(self.export_svc.DATASETS)).show()
+        ds = DatasetDialog(
+            self.root,
+            tr("export.csv.title"),
+            self.export_svc.DATASETS,
+            labels=self._ds_labels(self.export_svc.DATASETS),
+        ).show()
         if not ds:
             return
 
@@ -443,11 +474,17 @@ class MainWindow:
         if not path:
             return
 
-        self._run_in_worker(trf("io.export.worker_label", ds=ds, path=path), self.export_svc.export_csv, path, ds, period)
+        self._run_in_worker(
+            trf("io.export.worker_label", ds=ds, path=path), self.export_svc.export_csv, path, ds, period
+        )
 
     def download_csv_template(self) -> None:
-        ds = DatasetDialog(self.root, tr("menu.template.csv"), self.export_svc.DATASETS,
-                           labels=self._ds_labels(self.export_svc.DATASETS)).show()
+        ds = DatasetDialog(
+            self.root,
+            tr("menu.template.csv"),
+            self.export_svc.DATASETS,
+            labels=self._ds_labels(self.export_svc.DATASETS),
+        ).show()
         if not ds:
             return
         path = filedialog.asksaveasfilename(
@@ -462,8 +499,13 @@ class MainWindow:
             self.export_svc.write_csv_template(path, ds, include_examples=True)
             messagebox.showinfo(tr("template.saved.title"), trf("template.saved.msg", path=path), parent=self.root)
         except Exception as exc:
-            show_error(self.root, tr("common.error"), str(exc),
-                       db_path=self.settings.db_path(), log_path=self.settings.log_path())
+            show_error(
+                self.root,
+                tr("common.error"),
+                str(exc),
+                db_path=self.settings.db_path(),
+                log_path=self.settings.log_path(),
+            )
 
     def download_excel_template(self) -> None:
         path = filedialog.asksaveasfilename(
@@ -478,8 +520,13 @@ class MainWindow:
             self.export_svc.write_excel_template(path)
             messagebox.showinfo(tr("template.saved.title"), trf("template.saved.msg", path=path), parent=self.root)
         except Exception as exc:
-            show_error(self.root, tr("common.error"), str(exc),
-                       db_path=self.settings.db_path(), log_path=self.settings.log_path())
+            show_error(
+                self.root,
+                tr("common.error"),
+                str(exc),
+                db_path=self.settings.db_path(),
+                log_path=self.settings.log_path(),
+            )
 
     def _close_app(self, restart: bool = False) -> None:
         """Closes the app (incl. security/DB shutdown hook)."""
@@ -495,14 +542,17 @@ class MainWindow:
         if restart:
             import os
             import sys
+
             os.execv(sys.executable, [sys.executable] + sys.argv)
 
     def _lock_app(self) -> None:
         from src.security.manager import SecurityManager
+
         sec_path = SecurityManager(self.settings).security_path()
         cfg = None
         try:
             from src.security.security_config import load_security_config
+
             cfg = load_security_config(sec_path)
         except Exception:
             pass
@@ -530,13 +580,17 @@ class MainWindow:
 
             if current == tr("pin.title"):
                 from tkinter import simpledialog
-                pin = simpledialog.askstring(tr("pin.required.title"), tr("pin.prompt.current"), show="•", parent=self.root)
+
+                pin = simpledialog.askstring(
+                    tr("pin.required.title"), tr("pin.prompt.current"), show="•", parent=self.root
+                )
                 if pin is None:
                     return
                 current_pin = pin.strip()
 
             if new_mode == tr("pin.title"):
                 from tkinter import simpledialog
+
                 p1 = simpledialog.askstring(tr("pin.new.title"), tr("pin.prompt.new"), show="•", parent=self.root)
                 if p1 is None:
                     return
@@ -564,17 +618,22 @@ class MainWindow:
             messagebox.showinfo(tr("menu.security"), tr("security.mode_changed_restart.message"), parent=self.root)
             self._close_app()
         except Exception as e:
-            messagebox.showerror(tr("common.error"), ftrf("security.mode_change_failed.message", error=e), parent=self.root)
+            messagebox.showerror(
+                tr("common.error"), ftrf("security.mode_change_failed.message", error=e), parent=self.root
+            )
 
     def change_pin(self) -> None:
         try:
             mode = self.security_svc.get_status().mode
             from tkinter import simpledialog
+
             if mode != tr("pin.title"):
                 messagebox.showinfo(tr("common.notice"), tr("pin.change_unavailable.message"), parent=self.root)
                 return
 
-            old_pin = simpledialog.askstring(tr("pin.change.title"), tr("pin.label.current"), show="•", parent=self.root)
+            old_pin = simpledialog.askstring(
+                tr("pin.change.title"), tr("pin.label.current"), show="•", parent=self.root
+            )
             if old_pin is None:
                 return
             old_pin = old_pin.strip()

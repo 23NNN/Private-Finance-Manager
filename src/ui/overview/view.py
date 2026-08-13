@@ -126,7 +126,9 @@ class OverviewView(ttk.Frame):
         top = ttk.Frame(parent)
         top.pack(fill="x", pady=(6, 8), padx=6)
 
-        self.__dict__[f"{prefix}_lbl_savings"] = ttk.Label(top, text=trf("overview.summary.savings_total", amount="0.00"))
+        self.__dict__[f"{prefix}_lbl_savings"] = ttk.Label(
+            top, text=trf("overview.summary.savings_total", amount="0.00")
+        )
         self.__dict__[f"{prefix}_lbl_fix"] = ttk.Label(top, text=trf("overview.summary.fixed", amount="0.00"))
         self.__dict__[f"{prefix}_lbl_var"] = ttk.Label(top, text=trf("overview.summary.variable", amount="0.00"))
 
@@ -148,14 +150,25 @@ class OverviewView(ttk.Frame):
         lf_sum.pack(fill="both", expand=True)
 
         inc_cols = ["quelle", "calc", "actual", "sparen"]
-        inc_heads = {"quelle": tr("overview.col.source"), "calc": tr("overview.col.calculated"), "actual": tr("overview.col.actual"), "sparen": tr("overview.col.savings")}
+        inc_heads = {
+            "quelle": tr("overview.col.source"),
+            "calc": tr("overview.col.calculated"),
+            "actual": tr("overview.col.actual"),
+            "sparen": tr("overview.col.savings"),
+        }
         inc_tree, inc_frame = create_treeview_with_scrollbars(lf_inc, inc_cols, inc_heads, height=5)
         inc_frame.pack(fill="both", expand=True, padx=6, pady=(6, 0))
         self.__dict__[f"{prefix}_tree_incomes"] = inc_tree
         self.__dict__[f"{prefix}_footer_incomes"] = self._build_footer(lf_inc, inc_cols)
 
         acc_cols = ["konto", "fix", "fix_pct", "var", "var_pct"]
-        acc_heads = {"konto": tr("overview.col.account"), "fix": tr("overview.col.fixed"), "fix_pct": tr("overview.col.fixed_pct"), "var": tr("overview.col.variable"), "var_pct": tr("overview.col.variable_pct")}
+        acc_heads = {
+            "konto": tr("overview.col.account"),
+            "fix": tr("overview.col.fixed"),
+            "fix_pct": tr("overview.col.fixed_pct"),
+            "var": tr("overview.col.variable"),
+            "var_pct": tr("overview.col.variable_pct"),
+        }
         acc_tree, acc_frame = create_treeview_with_scrollbars(lf_acc, acc_cols, acc_heads, height=5)
         acc_frame.pack(fill="both", expand=True, padx=6, pady=(6, 0))
         self.__dict__[f"{prefix}_tree_accounts"] = acc_tree
@@ -189,11 +202,15 @@ class OverviewView(ttk.Frame):
         self.__dict__[f"{prefix}_footer_summary"] = self._build_footer(lf_sum, sum_cols)
 
     def set_period_data(self, prefix: str, *, savings_total: str, fix_total: str, var_total: str) -> None:
-        self.__dict__[f"{prefix}_lbl_savings"].configure(text=trf("overview.summary.savings_total", amount=savings_total))
+        self.__dict__[f"{prefix}_lbl_savings"].configure(
+            text=trf("overview.summary.savings_total", amount=savings_total)
+        )
         self.__dict__[f"{prefix}_lbl_fix"].configure(text=trf("overview.summary.fixed", amount=fix_total))
         self.__dict__[f"{prefix}_lbl_var"].configure(text=trf("overview.summary.variable", amount=var_total))
 
-    def set_incomes(self, prefix: str, rows: list[tuple[str, str, str, str]], *, footer: tuple[str, str, str, str]) -> None:
+    def set_incomes(
+        self, prefix: str, rows: list[tuple[str, str, str, str]], *, footer: tuple[str, str, str, str]
+    ) -> None:
         tree = self.__dict__[f"{prefix}_tree_incomes"]
         tree.delete(*tree.get_children())
         for i, (q, c, a, s) in enumerate(rows):
@@ -205,7 +222,9 @@ class OverviewView(ttk.Frame):
         f["actual"].configure(text=footer[2])
         f["sparen"].configure(text=footer[3])
 
-    def set_accounts(self, prefix: str, rows: list[tuple[str, str, str, str, str]], *, footer: tuple[str, str, str, str, str]) -> None:
+    def set_accounts(
+        self, prefix: str, rows: list[tuple[str, str, str, str, str]], *, footer: tuple[str, str, str, str, str]
+    ) -> None:
         tree = self.__dict__[f"{prefix}_tree_accounts"]
         tree.delete(*tree.get_children())
         for i, r in enumerate(rows):
@@ -218,7 +237,9 @@ class OverviewView(ttk.Frame):
         f["var"].configure(text=footer[3])
         f["var_pct"].configure(text=footer[4])
 
-    def set_loans(self, prefix: str, rows: list[tuple[str, str, str, str, str]], *, footer: tuple[str, str, str, str, str]) -> None:
+    def set_loans(
+        self, prefix: str, rows: list[tuple[str, str, str, str, str]], *, footer: tuple[str, str, str, str, str]
+    ) -> None:
         tree = self.__dict__[f"{prefix}_tree_loans"]
         tree.delete(*tree.get_children())
         for i, r in enumerate(rows):
