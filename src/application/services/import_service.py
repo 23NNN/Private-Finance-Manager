@@ -19,6 +19,7 @@ from src.infrastructure.db.orm_models import (
     ExpenseCategory,
     ExpenseGroup,
     ExpenseRecurring,
+    ExpenseVariable,
     ImportRun,
     IncomeFixed,
     IncomeHourly,
@@ -28,6 +29,7 @@ from src.infrastructure.db.orm_models import (
     PayRuleType,
     PayRuleUnit,
     RecurringStatus,
+    VariableStatus,
 )
 from src.infrastructure.io.csv_reader import read_csv_dicts
 from src.infrastructure.unit_of_work import UnitOfWork
@@ -170,6 +172,17 @@ def _recurring_status_from_any(value: Any) -> RecurringStatus:
     return RecurringStatus(_norm(value).upper())
 
 
+def _variable_status_from_any(value: Any) -> VariableStatus:
+    s = _norm(value).lower()
+    if not s or s in {"open", "offen"}:
+        return VariableStatus.OPEN
+    if s in {"paid", "bezahlt"}:
+        return VariableStatus.PAID
+    if s in {"cancelled", "canceled", "storniert"}:
+        return VariableStatus.CANCELLED
+    return VariableStatus(_norm(value).upper())
+
+
 def _ensure_default_categories(uow: UnitOfWork) -> None:
     existing = {c.name: c for c in uow.expense_categories.list_all()}
 
@@ -203,7 +216,6 @@ class ImportService:
     # dataset, not a bug fix — rejected explicitly instead of silently
     # producing wrong or crashing imports. Use the Excel import instead.
     _UNSUPPORTED_CSV_DATASETS = {
-        "expense_variable",
         "loans",
         "loan_events",
     }
@@ -607,6 +619,42 @@ class ImportService:
                         )
                         inserted += 1
 
+                    elif dataset == "expense_variable":
+                        name = _norm(_get(r, "name", "bezeichnung"))
+                        if not name:
+                            issues.append(
+                                ImportIssue(dataset, row_idx, "name", "", "Required field missing – row skipped.")
+                            )
+                            skipped += 1
+                            continue
+
+                        cat_name = _norm(_get(r, "category_name", "kategorie")) or "Allgemein (Variabel)"
+                        category = ensure_category(cat_name, ExpenseGroup.VARIABLE)
+
+                        amount = parse_decimal(_get(r, "amount", "betrag"), default=Decimal("0"))
+                        year = parse_int(_get(r, "year", "jahr"))
+                        month = parse_month(_get(r, "month", "monat"))
+                        status = _variable_status_from_any(_get(r, "status"))
+                        acc_label = _norm(_get(r, "account_label", "konto"))
+                        account = ensure_account(acc_label) if acc_label else None
+                        pay_bucket = _pay_bucket_from_any(_get(r, "pay_bucket", "zahlungszeitpunkt"))
+                        notes = _norm(_get(r, "notes", "notiz")) or None
+
+                        uow.expense_variable.upsert(
+                            ExpenseVariable(
+                                name=name,
+                                category_id=category.id,
+                                amount=amount,
+                                year=year,
+                                month=month,
+                                status=status,
+                                account_id=account.id if account else None,
+                                pay_bucket=pay_bucket,
+                                notes=notes,
+                            )
+                        )
+                        inserted += 1
+
                     else:
                         raise ValueError(f"Nicht implementiert: {dataset}")
 
@@ -742,6 +790,24 @@ class ImportService:
                 "zahlungszeitpunkt",
                 "allocation_override",
                 "modusoverride",
+            }
+
+        if dataset == "expense_variable":
+            return base | {
+                "bezeichnung",
+                "category_name",
+                "kategorie",
+                "amount",
+                "betrag",
+                "year",
+                "jahr",
+                "month",
+                "monat",
+                "status",
+                "account_label",
+                "konto",
+                "pay_bucket",
+                "zahlungszeitpunkt",
             }
 
         return base

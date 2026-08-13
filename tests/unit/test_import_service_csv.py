@@ -387,9 +387,76 @@ def test_import_expense_recurring_round_trips_with_export(tmp_path: Path):
         assert row.account.label == "GIRO"
 
 
+def test_import_expense_variable_always_inserts(tmp_path: Path):
+    svc = ImportService()
+
+    path = _write_csv(
+        tmp_path,
+        "expense_variable.csv",
+        ["name", "category_name", "amount", "year", "month", "status"],
+        [["Lebensmittel", "Haushalt", "250.00", "2026", "7", "bezahlt"]],
+    )
+    result = svc.import_csv(path, "expense_variable")
+    assert result["status"] == "ok"
+    assert result["inserted"] == 1
+
+    with UnitOfWork() as uow:
+        rows = uow.expense_variable.list_for_period(2026, 7)
+        assert len(rows) == 1
+        row = rows[0]
+        assert row.name == "Lebensmittel"
+        assert row.amount == Decimal("250.00")
+        assert row.status.value == "PAID"
+        assert row.account_id is None  # optional FK, no label given -> no auto-create
+        assert row.category.name == "Haushalt"
+
+    # No natural key for this dataset -- a second equivalent import always
+    # inserts a new row, never updates (matches expense_recurring/excel_importer.py).
+    result2 = svc.import_csv(
+        _write_csv(
+            tmp_path,
+            "expense_variable2.csv",
+            ["name", "category_name", "amount", "year", "month", "status"],
+            [["Lebensmittel", "Haushalt", "260.00", "2026", "7", "offen"]],
+        ),
+        "expense_variable",
+    )
+    assert result2["inserted"] == 1
+    with UnitOfWork() as uow:
+        assert len(uow.expense_variable.list_for_period(2026, 7)) == 2
+
+
+def test_import_expense_variable_round_trips_with_export(tmp_path: Path):
+    svc = ImportService()
+
+    path = _write_csv(
+        tmp_path,
+        "expense_variable.csv",
+        ["name", "category_name", "amount", "year", "month", "status", "account_label", "pay_bucket"],
+        [["Geschenk", "Freizeit", "45.00", "2026", "8", "storniert", "GIRO", "ANFANG"]],
+    )
+    svc.import_csv(path, "expense_variable")
+
+    export_path = str(tmp_path / "expense_variable_export.csv")
+    ExportService().export_csv(export_path, "expense_variable", period=Period(2026, 8))
+
+    result = svc.import_csv(export_path, "expense_variable")
+    assert result["status"] == "ok"
+    assert result["inserted"] == 1
+
+    with UnitOfWork() as uow:
+        rows = [r for r in uow.expense_variable.list_for_period(2026, 8) if r.name == "Geschenk"]
+        assert len(rows) == 2
+        row = rows[0]
+        assert row.amount == Decimal("45.00")
+        assert row.status.value == "CANCELLED"
+        assert row.pay_bucket.value == "BEGINNING"
+        assert row.account.label == "GIRO"
+
+
 @pytest.mark.parametrize(
     "dataset",
-    ["expense_variable", "loans", "loan_events"],
+    ["loans", "loan_events"],
 )
 def test_import_csv_rejects_unsupported_datasets(tmp_path: Path, dataset: str):
     svc = ImportService()
