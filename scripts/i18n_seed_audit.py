@@ -59,6 +59,8 @@ _ALLOWED_VALUES = {
     "Variable",
     "Variable: {amount}",
     "Var %",
+    "Bonus",
+    "Date (YYYY-MM-DD)",
     "—",
     "-",
     "",

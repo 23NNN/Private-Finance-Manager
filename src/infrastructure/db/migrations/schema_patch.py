@@ -185,7 +185,7 @@ def ensure_schema() -> list[str]:
                     "status.paid": {"de": "Bezahlt", "en": "Paid", "fr": "Payé", "es": "Pagado", "it": "Pagato"},
                     "status.cancelled": {"de": "Storniert", "en": "Cancelled", "fr": "Annulé", "es": "Cancelado", "it": "Annullato"},
                     "timing.none": {"de": "—", "en": "—", "fr": "—", "es": "—", "it": "—"},
-                    "allocation.cashflow": {"de": "Cashflow", "en": "Cashflow", "fr": "Cashflow", "es": "Flujo de caja", "it": "Flusso di cassa"},
+                    "allocation.cashflow": {"de": "Cashflow", "en": "Cashflow", "fr": "Flux de trésorerie", "es": "Flujo de caja", "it": "Flusso di cassa"},
                     "allocation.allocate_monthly": {"de": "Budgetiert (Monat)", "en": "Budgeted (monthly)", "fr": "Budgété (mensuel)", "es": "Presupuestado (mensual)", "it": "Budget (mensile)"},
                     "allocation.allocate_quarterly": {"de": "Budgetiert (Quartal)", "en": "Budgeted (quarterly)", "fr": "Budgété (trimestriel)", "es": "Presupuestado (trimestral)", "it": "Budget (trimestrale)"},
                     "loan_event.payment": {"de": "Zahlung", "en": "Payment", "fr": "Paiement", "es": "Pago", "it": "Pagamento"},
@@ -674,8 +674,8 @@ def ensure_schema() -> list[str]:
                     "error_dialog.copy.details_separator": {"de": "\n--- Details ---\n", "en": "\n--- Details ---\n", "fr": "\n--- Détails ---\n", "es": "\n--- Detalles ---\n", "it": "\n--- Dettagli ---\n"},
                     "menu.template.csv": {"de": "CSV-Vorlage herunterladen…", "en": "Download CSV Template…", "fr": "Télécharger le modèle CSV…", "es": "Descargar plantilla CSV…", "it": "Scarica modello CSV…"},
                     "menu.template.excel": {"de": "Excel-Vorlage herunterladen…", "en": "Download Excel Template…", "fr": "Télécharger le modèle Excel…", "es": "Descargar plantilla Excel…", "it": "Scarica modello Excel…"},
-                    "template.saved.title": {"de": "Vorlage gespeichert", "en": "Template Saved", "fr": "Template Saved", "es": "Template Saved", "it": "Template Saved"},
-                    "template.saved.msg": {"de": "Vorlage gespeichert:\n{path}", "en": "Template saved:\n{path}", "fr": "Template saved:\n{path}", "es": "Template saved:\n{path}", "it": "Template saved:\n{path}"},
+                    "template.saved.title": {"de": "Vorlage gespeichert", "en": "Template Saved", "fr": "Modèle enregistré", "es": "Plantilla guardada", "it": "Modello salvato"},
+                    "template.saved.msg": {"de": "Vorlage gespeichert:\n{path}", "en": "Template saved:\n{path}", "fr": "Modèle enregistré :\n{path}", "es": "Plantilla guardada:\n{path}", "it": "Modello salvato:\n{path}"},
 }
 
                 with engine.begin() as conn:
