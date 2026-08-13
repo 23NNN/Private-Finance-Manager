@@ -23,16 +23,15 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -e .[dev]
 
-      # Full-repo check as of Zyklus 3 (chore/ruff-legacy-cleanup): all pre-existing
-      # findings except E501 (line-too-long) were fixed or annotated. E501 remains
-      # ignored repo-wide until Zyklus 4 does the line-length reflow. src/security/
-      # is excluded because that path is AI-edit-locked (see CLAUDE.md, .claude/
+      # Full-repo check, E501 included as of Zyklus 5 (chore/e501-reflow): the repo
+      # was reflowed with `ruff format` and now passes the full rule set. src/security/
+      # remains excluded because that path is AI-edit-locked (see CLAUDE.md, .claude/
       # settings.json permissions.deny) -- its handful of remaining findings need a
-      # manual pass by a human maintainer. Once both are cleared, drop --ignore E501
-      # and --exclude src/security to get the full, unscoped `ruff check .`.
+      # manual pass by a human maintainer. Once cleared, drop --exclude src/security
+      # to get the full, unscoped `ruff check .`.
       - name: Ruff
         shell: bash
-        run: ruff check . --exclude src/security --ignore E501
+        run: ruff check . --exclude src/security
 
       - name: Pytest
         run: pytest -q
