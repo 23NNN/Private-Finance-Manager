@@ -101,12 +101,15 @@ class OverviewPresenter:
         )
         self._view.set_accounts(prefix, acc_rows, footer=acc_footer)
 
-        loan_rows = [(l.loan_name, _m(l.open_before), _m(l.payment), _m(l.extra), _m(l.open_after)) for l in pvm.loans]
+        loan_rows = [
+            (loan.loan_name, _m(loan.open_before), _m(loan.payment), _m(loan.extra), _m(loan.open_after))
+            for loan in pvm.loans
+        ]
         loan_footer = (
             tr("common.total"),
             "",
-            _m(sum((l.payment for l in pvm.loans), Decimal("0.00"))),
-            _m(sum((l.extra for l in pvm.loans), Decimal("0.00"))),
+            _m(sum((loan.payment for loan in pvm.loans), Decimal("0.00"))),
+            _m(sum((loan.extra for loan in pvm.loans), Decimal("0.00"))),
             "",
         )
         self._view.set_loans(prefix, loan_rows, footer=loan_footer)

@@ -397,22 +397,22 @@ class ExportService:
     def _export_loans(self, uow) -> list[dict]:
         acc_by_id = {a.id: a.label for a in uow.accounts.list_all()}
         out = []
-        for l in uow.loans.list_all():
+        for loan in uow.loans.list_all():
             out.append({
-                "name": l.name,
-                "start_date": str(l.start_date),
-                "principal_initial": str(l.principal_initial),
-                "annual_interest_rate": str(l.annual_interest_rate),
-                "regular_payment": str(l.regular_payment),
-                "payment_timing": getattr(l.payment_timing, "value", str(l.payment_timing)),
-                "account_label": acc_by_id.get(l.account_id, ""),
-                "status": getattr(l.status, "value", str(l.status)),
-                "notes": l.notes or "",
+                "name": loan.name,
+                "start_date": str(loan.start_date),
+                "principal_initial": str(loan.principal_initial),
+                "annual_interest_rate": str(loan.annual_interest_rate),
+                "regular_payment": str(loan.regular_payment),
+                "payment_timing": getattr(loan.payment_timing, "value", str(loan.payment_timing)),
+                "account_label": acc_by_id.get(loan.account_id, ""),
+                "status": getattr(loan.status, "value", str(loan.status)),
+                "notes": loan.notes or "",
             })
         return out
 
     def _export_loan_events(self, uow) -> list[dict]:
-        loan_by_id = {l.id: l.name for l in uow.loans.list_all()}
+        loan_by_id = {loan.id: loan.name for loan in uow.loans.list_all()}
         out = []
         for e in uow.loan_events.list_all():
             out.append({

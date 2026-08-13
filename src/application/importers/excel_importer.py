@@ -172,7 +172,7 @@ def import_excel_template(path: str, uow_factory=UnitOfWork) -> dict:
         acc_by_label = {a.label: a for a in uow.accounts.list_all()}
         emp_by_name = {e.name: e for e in uow.employers.list_all()}
         cat_by_name = {c.name: c for c in uow.categories.list_all()}
-        loan_by_name = {l.name: l for l in uow.loans.list_all()}
+        loan_by_name = {loan.name: loan for loan in uow.loans.list_all()}
 
         def ensure_account(label: str) -> Account:
             label = (label or "").strip() or "DEFAULT"
