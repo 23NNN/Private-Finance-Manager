@@ -60,6 +60,11 @@ _ALLOWED_VALUES = {
 # product name) regardless of value.
 _ALLOWED_KEYS = {"app.title"}
 
+# (key, lang) pairs that are intentionally identical to en for that specific
+# language only (e.g. "File" is standard Italian software-menu convention,
+# unlike French/Spanish which do translate it).
+_ALLOWED_KEY_LANGS = {("menu.file", "it")}
+
 
 def _find_seed_dict(tree: ast.Module) -> ast.Dict:
     for node in ast.walk(tree):
@@ -87,7 +92,7 @@ def main() -> int:
         en = langs.get("en", "")
         for lang in _LANGS:
             val = langs.get(lang, "")
-            if val == en and val not in _ALLOWED_VALUES:
+            if val == en and val not in _ALLOWED_VALUES and (key, lang) not in _ALLOWED_KEY_LANGS:
                 findings.append((key, lang))
 
     if not findings:
