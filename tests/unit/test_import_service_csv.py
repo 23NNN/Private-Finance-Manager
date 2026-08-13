@@ -528,13 +528,110 @@ def test_import_loans_round_trips_with_export(tmp_path: Path):
         assert uow.accounts.get(loan.account_id).label == "GIRO"
 
 
-@pytest.mark.parametrize(
-    "dataset",
-    ["loan_events"],
-)
-def test_import_csv_rejects_unsupported_datasets(tmp_path: Path, dataset: str):
+def test_import_loan_events_always_inserts(tmp_path: Path):
     svc = ImportService()
-    path = _write_csv(tmp_path, "data.csv", ["name"], [["whatever"]])
 
-    with pytest.raises(ValueError, match="nicht unterstützt"):
-        svc.import_csv(path, dataset)
+    loans_path = _write_csv(
+        tmp_path,
+        "loans.csv",
+        ["name", "start_date", "principal_initial", "regular_payment"],
+        [["Auto Kredit", "2026-01-01", "15000.00", "250.00"]],
+    )
+    svc.import_csv(loans_path, "loans")
+
+    path = _write_csv(
+        tmp_path,
+        "loan_events.csv",
+        ["loan_name", "event_date", "year", "month", "event_type", "amount"],
+        [["Auto Kredit", "2026-01-15", "2026", "1", "PAYMENT", "250.00"]],
+    )
+    result = svc.import_csv(path, "loan_events")
+    assert result["status"] == "ok"
+    assert result["inserted"] == 1
+    assert result["skipped"] == 0
+
+    with UnitOfWork() as uow:
+        loan = uow.loans.get_by_name("Auto Kredit")
+        events = uow.loan_events.list_by_loan(loan.id)
+        assert len(events) == 1
+        assert events[0].amount == Decimal("250.00")
+        assert events[0].event_type.value == "PAYMENT"
+
+    # No natural key -- a second equivalent import always inserts a new event.
+    result2 = svc.import_csv(
+        _write_csv(
+            tmp_path,
+            "loan_events2.csv",
+            ["loan_name", "event_date", "year", "month", "event_type", "amount"],
+            [["Auto Kredit", "2026-02-15", "2026", "2", "EXTRA_PAYMENT", "500.00"]],
+        ),
+        "loan_events",
+    )
+    assert result2["inserted"] == 1
+    with UnitOfWork() as uow:
+        loan = uow.loans.get_by_name("Auto Kredit")
+        assert len(uow.loan_events.list_by_loan(loan.id)) == 2
+
+
+def test_import_loan_events_skips_row_when_loan_missing(tmp_path: Path):
+    svc = ImportService()
+
+    path = _write_csv(
+        tmp_path,
+        "loan_events.csv",
+        ["loan_name", "event_date", "year", "month", "event_type", "amount"],
+        [["Unbekannter Kredit", "2026-01-15", "2026", "1", "PAYMENT", "250.00"]],
+    )
+    result = svc.import_csv(path, "loan_events")
+    assert result["status"] == "ok"
+    assert result["inserted"] == 0
+    assert result["skipped"] == 1
+    assert any("nicht gefunden" in issue.message for issue in result["issues"])
+
+
+def test_import_loan_events_round_trips_with_export(tmp_path: Path):
+    svc = ImportService()
+
+    svc.import_csv(
+        _write_csv(
+            tmp_path,
+            "loans.csv",
+            ["name", "start_date", "principal_initial", "regular_payment"],
+            [["RoundTrip Kredit", "2026-01-01", "8000.00", "150.00"]],
+        ),
+        "loans",
+    )
+    svc.import_csv(
+        _write_csv(
+            tmp_path,
+            "loan_events.csv",
+            [
+                "loan_name",
+                "event_date",
+                "year",
+                "month",
+                "event_type",
+                "amount",
+                "new_regular_payment",
+                "new_annual_interest_rate",
+            ],
+            [["RoundTrip Kredit", "2026-03-15", "2026", "3", "RATE_CHANGE", "", "160.00", "2.5000"]],
+        ),
+        "loan_events",
+    )
+
+    export_path = str(tmp_path / "loan_events_export.csv")
+    ExportService().export_csv(export_path, "loan_events")
+
+    result = svc.import_csv(export_path, "loan_events")
+    assert result["status"] == "ok"
+    assert result["inserted"] == 1
+
+    with UnitOfWork() as uow:
+        loan = uow.loans.get_by_name("RoundTrip Kredit")
+        events = uow.loan_events.list_by_loan(loan.id)
+        assert len(events) == 2
+        ev = events[0]
+        assert ev.event_type.value == "RATE_CHANGE"
+        assert ev.new_regular_payment == Decimal("160.00")
+        assert ev.new_annual_interest_rate == Decimal("2.5000")

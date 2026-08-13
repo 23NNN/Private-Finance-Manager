@@ -24,6 +24,8 @@ from src.infrastructure.db.orm_models import (
     IncomeFixed,
     IncomeHourly,
     Loan,
+    LoanEvent,
+    LoanEventType,
     LoanStatus,
     PayBucket,
     PayoutTiming,
@@ -226,9 +228,7 @@ class ImportService:
     # based). Fixing them requires designing a new CSV column contract per
     # dataset, not a bug fix — rejected explicitly instead of silently
     # producing wrong or crashing imports. Use the Excel import instead.
-    _UNSUPPORTED_CSV_DATASETS = {
-        "loan_events",
-    }
+    _UNSUPPORTED_CSV_DATASETS: set[str] = set()
 
     def __init__(self, uow_factory=UnitOfWork) -> None:
         self._uow_factory = uow_factory
@@ -716,6 +716,69 @@ class ImportService:
                             loan_by_name[name] = obj
                             inserted += 1
 
+                    elif dataset == "loan_events":
+                        loan_name = _norm(_get(r, "loan_name", "kredit"))
+                        if not loan_name:
+                            issues.append(
+                                ImportIssue(
+                                    dataset, row_idx, "loan_name", "", "Required field missing – row skipped."
+                                )
+                            )
+                            skipped += 1
+                            continue
+                        loan = loan_by_name.get(loan_name)
+                        if loan is None:
+                            issues.append(
+                                ImportIssue(
+                                    dataset,
+                                    row_idx,
+                                    "loan_name",
+                                    loan_name,
+                                    f"Kredit '{loan_name}' nicht gefunden — bitte zuerst per "
+                                    "'loans'-Import oder in der UI anlegen.",
+                                )
+                            )
+                            skipped += 1
+                            continue
+
+                        event_date = parse_date(_get(r, "event_date"))
+                        year = parse_int(_get(r, "year", "jahr"))
+                        month = parse_month(_get(r, "month", "monat"))
+
+                        event_type_raw = _norm(_get(r, "event_type"))
+                        if not event_type_raw:
+                            issues.append(
+                                ImportIssue(
+                                    dataset, row_idx, "event_type", "", "Required field missing – row skipped."
+                                )
+                            )
+                            skipped += 1
+                            continue
+                        event_type = LoanEventType(event_type_raw.upper())
+
+                        amount_raw = _get(r, "amount")
+                        amount = parse_decimal(amount_raw) if _norm(amount_raw) else None
+                        new_payment_raw = _get(r, "new_regular_payment")
+                        new_regular_payment = parse_decimal(new_payment_raw) if _norm(new_payment_raw) else None
+                        new_rate_raw = _get(r, "new_annual_interest_rate")
+                        new_annual_interest_rate = parse_decimal(new_rate_raw) if _norm(new_rate_raw) else None
+                        notes = _norm(_get(r, "notes", "notiz")) or None
+
+                        uow.loan_events.upsert(
+                            LoanEvent(
+                                loan_id=loan.id,
+                                event_date=event_date,
+                                year=year,
+                                month=month,
+                                event_type=event_type,
+                                amount=amount,
+                                new_regular_payment=new_regular_payment,
+                                new_annual_interest_rate=new_annual_interest_rate,
+                                notes=notes,
+                            )
+                        )
+                        inserted += 1
+
                     else:
                         raise ValueError(f"Nicht implementiert: {dataset}")
 
@@ -887,6 +950,21 @@ class ImportService:
                 "account_label",
                 "konto",
                 "status",
+            }
+
+        if dataset == "loan_events":
+            return base | {
+                "loan_name",
+                "kredit",
+                "event_date",
+                "year",
+                "jahr",
+                "month",
+                "monat",
+                "event_type",
+                "amount",
+                "new_regular_payment",
+                "new_annual_interest_rate",
             }
 
         return base
