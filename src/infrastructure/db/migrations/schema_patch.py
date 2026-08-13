@@ -9,6 +9,78 @@ from src.infrastructure.db.engine import get_engine
 
 logger = logging.getLogger(__name__)
 
+# i18n seed keys whose fr/es/it values were corrected in Zyklus 4 (were
+# untranslated English placeholders). The seed-insert loop below is
+# insert-only (skips rows that already exist), so a corrected value in
+# `seed` alone would never reach a database that had already run
+# ensure_schema() once. These keys get force-refreshed on every run
+# instead of insert-only, so already-provisioned databases pick up the
+# fix too. Do not add keys here casually -- this is a one-time repair
+# list, not a general upsert switch (a general upsert would silently
+# overwrite any future manual DB-level string customization for all 579
+# seed keys, not just these).
+_I18N_FORCE_REFRESH_KEYS = frozenset(
+    {
+        "allocation.cashflow",
+        "common.copy",
+        "common.hide_details",
+        "common.open_in_explorer",
+        "common.open_log",
+        "common.refresh",
+        "common.show_details",
+        "dataset.accounts",
+        "dataset.categories",
+        "dataset.employers",
+        "dataset.expense_recurring",
+        "dataset.expense_variable",
+        "dataset.income_fixed",
+        "dataset.income_hourly",
+        "dataset.loan_events",
+        "dataset.loans",
+        "dataset.pay_rules",
+        "error.database",
+        "error.details",
+        "error.invalid",
+        "error.paths",
+        "error.required",
+        "filter.all",
+        "filter.title",
+        "lang.de",
+        "lang.en",
+        "lang.es",
+        "lang.fr",
+        "lang.it",
+        "lang.restart.msg",
+        "lang.restart.title",
+        "menu.backup",
+        "menu.db.check",
+        "menu.exit",
+        "menu.export.csv",
+        "menu.file",
+        "menu.import.csv",
+        "menu.import.excel",
+        "menu.info",
+        "menu.security",
+        "menu.security.mode",
+        "menu.security.pin",
+        "menu.template.csv",
+        "menu.template.excel",
+        "period.month",
+        "period.year",
+        "period.year_view",
+        "status.active",
+        "status.closed",
+        "status.inactive",
+        "status.ready",
+        "tab.accounts",
+        "tab.expenses",
+        "tab.income",
+        "tab.overview",
+        "template.saved.msg",
+        "template.saved.title",
+    }
+)
+
 
 def ensure_schema() -> list[str]:
     """Best-effort SQLite schema patch (safe to call on every start).
@@ -688,6 +760,11 @@ def ensure_schema() -> list[str]:
                             if not exists:
                                 conn.execute(
                                     text("INSERT INTO i18n_string(key, lang, text) VALUES(:k, :l, :t)"),
+                                    {"k": k, "l": lang, "t": txt_},
+                                )
+                            elif k in _I18N_FORCE_REFRESH_KEYS:
+                                conn.execute(
+                                    text("UPDATE i18n_string SET text=:t WHERE key=:k AND lang=:l"),
                                     {"k": k, "l": lang, "t": txt_},
                                 )
                     changes.append("i18n seed checked/updated")
