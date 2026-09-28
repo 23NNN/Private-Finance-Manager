@@ -30,12 +30,11 @@ Start:
 .\.venv\Scripts\python -m pip install -e .[dev,security]
 ```
 
-If `pysqlcipher3` cannot be built on Windows, use one of the alternatives:
+The `security` extra installs `sqlcipher3` (prebuilt Windows wheels). `pysqlcipher3` usually
+cannot be built on Windows; `pysqlcipher3-binary` has no Windows wheel. Manual install:
 
 ```powershell
 .\.venv\Scripts\python -m pip install sqlcipher3
-# or:
-.\.venv\Scripts\python -m pip install pysqlcipher3-binary
 ```
 
 ## Architecture Rules

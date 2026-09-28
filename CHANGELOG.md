@@ -6,6 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.3.1] — 2026-09-29
+
+### Fixed
+
+- README version badge showed 1.2 while `pyproject.toml` was at 1.3.0.
+- README and `docs/dev_guide.md` documented `pip install -e .[dev,security]`, but no `security`
+  extra existed (pip only warns and silently skips SQLCipher). Added `security = ["sqlcipher3"]`.
+  DPAPI needs no dependency (`ctypes`).
+- Docs recommended `pysqlcipher3-binary`, which has no Windows wheel on PyPI; now `sqlcipher3`.
+
+### Added
+
+- `tests/unit/test_packaging_consistency.py`: README badge version and every documented
+  `.[extra]` must match `pyproject.toml`.
+
 ## [1.3.0] — 2026-08-13
 
 ### Added

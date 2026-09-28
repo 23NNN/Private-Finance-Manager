@@ -165,7 +165,7 @@ Patches 1–006b + Tasks 1a–3 all done regarding `tr()`-wrapping. 111 audit ca
 
 ## Open Issues / Next Priorities
 
-**Aktueller Stand:** `main` = v1.2.5 (released). Zyklus 3 (Ruff-Legacy-Cleanup), Zyklus 4
+**Aktueller Stand:** `main` = v1.3.1 (released; v1.3.0 = Zyklus 6, v1.3.1 = Packaging-/Doku-Konsistenz). Zyklus 3 (Ruff-Legacy-Cleanup), Zyklus 4
 (i18n-Seed-Übersetzungslücke), Zyklus 5 (E501-Reflow) und Zyklus 6 (CSV-Import-Vervollständigung)
 sind abgeschlossen. CI läuft Full-Repo-`ruff check .` mit vollem Regelsatz inkl. E501 (nur
 `src/security/` bleibt ausgenommen, AI-Edit-Lock). CI ist als Required Status Check im
@@ -175,6 +175,12 @@ GitHub-Ruleset `main-protection` verankert (manuell vom Maintainer eingerichtet)
 - **Manuell zu erledigen** (AI-Edit-Lock auf `src/security/**`, siehe oben): 3× `F401`
   (`manager.py`: `os`, `time` ungenutzt; `bootstrap.py`: `verify_pin` ungenutzt) + 3× toter
   `# noqa: WPS433`-Kommentar in `manager.py` (kein gültiger Ruff-Code, Altlast).
+- **Manuell (AI-Edit-Lock):** Fehlermeldung in `src/security/sqlcipher_driver.py` (`SqlCipherNotAvailable`)
+  empfiehlt noch `pysqlcipher3-binary` (kein Windows-Wheel) → auf `pip install -e .[security]` /
+  `sqlcipher3` ändern.
+- **v1.3.1:** Extra `security = ["sqlcipher3"]` in `pyproject.toml` ergänzt; README-Badge/Docs
+  synchronisiert. `tests/unit/test_packaging_consistency.py` prüft Badge-Version und dokumentierte
+  Extras gegen `pyproject.toml` — bei Versionsbump README-Badge mitziehen.
 - **v1.3.0 (Zyklus 6):** CSV-Import unterstützt jetzt alle 10/10 Datensatz-Typen (vorher 4/10,
   siehe v1.2.2). Spaltenformat = `ExportService.SCHEMAS[dataset]["fields"]` (Round-Trip mit
   Export/Template-Download). `src/application/importers/csv_importer.py` bleibt ein
