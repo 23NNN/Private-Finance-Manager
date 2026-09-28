@@ -73,7 +73,7 @@ Back up periodically:
   - cannot open an already SQLCipher-encrypted DB (install SQLCipher in that case)
 
 Install (in the build/run venv):
-- `sqlcipher3` or `pysqlcipher3-binary`
+- `pip install -e .[security]` or `pip install sqlcipher3`
 
 ### "file is not a database"
 - Usually caused by:

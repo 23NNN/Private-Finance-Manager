@@ -7,7 +7,7 @@
     Replace your fragile Excel sheets with a real application. Your data stays local. Always.
   </p>
   <p align="center">
-    <img src="https://img.shields.io/badge/Version-1.2-22c55e" alt="Version 1.2">
+    <img src="https://img.shields.io/badge/Version-1.3.1-22c55e" alt="Version 1.3.1">
     <img src="https://img.shields.io/badge/Python-3.11+-3776AB?logo=python&logoColor=white" alt="Python 3.11+">
     <img src="https://img.shields.io/badge/Platform-Windows-0078D6?logo=windows&logoColor=white" alt="Windows">
     <img src="https://img.shields.io/badge/License-MIT-22c55e" alt="MIT License">
@@ -145,8 +145,8 @@ py -3.11 -m venv .venv
 .\.venv\Scripts\python -m pip install -e .[dev,security]
 ```
 
-> Note: on Windows `pysqlcipher3` may fail to build from source.
-> More stable alternatives: `sqlcipher3` or `pysqlcipher3-binary`. See [`docs/dev_guide.md`](docs/dev_guide.md).
+> The `security` extra installs `sqlcipher3` (prebuilt Windows wheels, no compiler needed).
+> `pysqlcipher3` usually fails to build from source on Windows. See [`docs/dev_guide.md`](docs/dev_guide.md).
 
 </details>
 
